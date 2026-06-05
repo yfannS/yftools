@@ -1,0 +1,72 @@
+# ==================================================
+# md2html-toolbox 根目录 .gitignore
+# ==================================================
+
+# ---- 通用 ----
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.env
+.env.local
+.env.*.local
+
+# ---- IDE / 编辑器 ----
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ---- Go 后端 ----
+backend/.env
+backend/tmp/
+backend/md2html-server
+backend/md2html
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# ---- Node.js 前端 ----
+webapp/node_modules/
+webapp/dist/
+webapp/dist-ssr/
+webapp/.env.local
+webapp/.env.*.local
+*.tsbuildinfo
+
+# ---- 日志 ----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Docker ----
+docker-compose.override.yml
+
+# ---- 数据库 ----
+*.sql.bak
+*.sql.gz
+
+# ---- 产物 / 临时 ----
+coverage/
+*.lcov
+.nyc_output/
+
+# ---- WorkBuddy ----
+.workbuddy/
+
+# ---- CodeBuddy ----
+.codebuddy/

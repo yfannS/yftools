@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown → HTML</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/c.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/cpp.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/java.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/go.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --surface-hover: #f5f5f5;
+      --surface-raised: #f0f0f0;
+      --text: #171717;
+      --text-secondary: #525252;
+      --text-tertiary: #a3a3a3;
+      --border: #e5e5e5;
+      --border-strong: #d4d4d4;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-soft: #eff6ff;
+      --danger: #dc2626;
+      --ok: #16a34a;
+      --editor-bg: #fafafa;
+      --preview-bg: #ffffff;
+      --line-number: #a3a3a3;
+      --line-highlight: rgba(37, 99, 235, 0.06);
+      --code-bg: #0a0a0a;
+      --radius: 8px;
+      --radius-sm: 6px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "SF Mono", "Fira Code", "Cascadia Code", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface-hover: #1a1a1a;
+      --surface-raised: #1f1f1f;
+      --text: #e5e5e5;
+      --text-secondary: #a3a3a3;
+      --text-tertiary: #737373;
+      --border: #262626;
+      --border-strong: #333333;
+      --accent: #3b82f6;
+      --accent-hover: #60a5fa;
+      --accent-soft: rgba(59, 130, 246, 0.1);
+      --editor-bg: #0a0a0a;
+      --preview-bg: #111111;
+      --line-number: #525252;
+      --line-highlight: rgba(59, 130, 246, 0.08);
+      --code-bg: #0a0a0a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+    /* Header */
+    .app-header {
+      height: 44px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 12px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .app-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .app-logo {
+      width: 22px;
+      height: 22px;
+      background: var(--text);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .app-logo svg {
+      width: 12px;
+      height: 12px;
+      stroke: var(--surface);
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .app-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .app-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toolbar-btn {
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.12s ease;
+      white-space: nowrap;
+    }
+
+    .toolbar-btn:hover {
+      border-color: var(--border-strong);
+      color: var(--text);
+      background: var(--surface-hover);
+    }
+
+    .toolbar-btn:active {
+      transform: translateY(0.5px);
+    }
+
+    .toolbar-btn.primary {
+      background: var(--text);
+      color: var(--surface);
+      border-color: var(--text);
+    }
+
+    .toolbar-btn.primary:hover {
+      background: var(--text-secondary);
+      border-color: var(--text-secondary);
+      color: var(--surface);
+    }
+
+    .toolbar-btn.icon-only {
+      width: 28px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    .toolbar-btn.icon-only svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .toolbar-btn.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .toolbar-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--border);
+      margin: 0 2px;
+    }
+
+    .filename-field {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      height: 28px;
+      padding: 0 8px;
+      background: var(--surface);
+      font-size: 12px;
+    }
+
+    .filename-field input {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 12px;
+      width: 120px;
+      font-family: var(--font-sans);
+    }
+
+    .filename-field span {
+      color: var(--text-tertiary);
+      font-size: 11px;
+    }
+
+    /* Main */
+    .app-main {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(200px, 1fr) 4px minmax(200px, 1fr);
+      gap: 0;
+      background: var(--border);
+    }
+
+    .app-panel {
+      background: var(--surface);
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .resize-handle {
+      background: var(--border);
+      cursor: col-resize;
+      transition: background 0.15s;
+      user-select: none;
+      position: relative;
+      z-index: 10;
+    }
+
+    .resize-handle::after {
+      content: '';
+      position: absolute;
+      inset: 0 -3px;
+    }
+
+    .resize-handle:hover,
+    .resize-handle.active {
+      background: var(--accent);
+    }
+
+    body.resize-active {
+      cursor: col-resize;
+      user-select: none;
+    }
+
+    body.resize-active * {
+      cursor: col-resize !important;
+    }
+
+    .panel-bar {
+      height: 34px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      flex-shrink: 0;
+      background: var(--surface);
+      gap: 8px;
+    }
+
+    .panel-bar-left, .panel-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .panel-stat {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .panel-tabs {
+      display: flex;
+      gap: 2px;
+    }
+
+    .panel-tab {
+      height: 22px;
+      padding: 0 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-tertiary);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-family: var(--font-sans);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+
+    .panel-tab:hover { color: var(--text-secondary); }
+    .panel-tab.active {
+      background: var(--surface-raised);
+      color: var(--text);
+    }
+
+    /* Editor */
+    .editor-body {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      position: relative;
+    }
+
+    .line-gutter {
+      border-right: 1px solid var(--border);
+      background: var(--editor-bg);
+      overflow: hidden;
+      padding: 12px 0;
+      font-size: 13px;
+      line-height: 1.7;
+      font-family: var(--font-mono);
+      color: var(--line-number);
+      text-align: right;
+      user-select: none;
+    }
+
+    .line-gutter pre {
+      white-space: pre;
+      padding: 0 10px 0 0;
+    }
+
+    .editor-area {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--editor-bg);
+    }
+
+    .current-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: calc(13px * 1.7);
+      background: var(--line-highlight);
+      pointer-events: none;
+      z-index: 1;
+      transform: translateY(-9999px);
+      border-left: 2px solid var(--accent);
+    }
+
+    #editor {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      resize: none;
+      font-size: 13px;
+      line-height: 1.7;
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      z-index: 2;
+      overflow: auto;
+      tab-size: 2;
+    }
+
+    #editor::placeholder { color: var(--text-tertiary); }
+    #editor::selection { background: rgba(37, 99, 235, 0.2); }
+
+    /* Find box */
+    .find-box {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 30;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      padding: 10px;
+      width: 280px;
+      display: none;
+      gap: 8px;
+      flex-direction: column;
+    }
+
+    .find-row { display: flex; gap: 6px; }
+    .find-row input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 5px 8px;
+      background: var(--editor-bg);
+      color: var(--text);
+      outline: none;
+      font-size: 12px;
+      font-family: var(--font-sans);
+    }
+    .find-row input:focus { border-color: var(--accent); }
+    .find-row .toolbar-btn { height: 26px; padding: 0 8px; font-size: 11px; }
+
+    /* Preview */
+    .preview-body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-pane {
+      position: absolute;
+      inset: 0;
+      overflow: auto;
+      display: none;
+      background: var(--preview-bg);
+    }
+
+    .preview-pane.active { display: block; }
+
+    #previewRender {
+      padding: 20px 24px;
+      max-width: 800px;
+      margin: 0 auto;
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--text);
+    }
+
+    #sourceRender {
+      padding: 16px 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--preview-bg);
+    }
+
+    /* Markdown preview styles */
+    #previewRender h1,
+    #previewRender h2,
+    #previewRender h3,
+    #previewRender h4,
+    #previewRender h5,
+    #previewRender h6 {
+      font-weight: 600;
+      line-height: 1.35;
+      margin-top: 1.6em;
+      margin-bottom: 0.5em;
+      color: var(--text);
+      scroll-margin-top: 16px;
+    }
+
+    #previewRender h1 { font-size: 1.75em; margin-top: 0; padding-bottom: 0.3em; border-bottom: 1px solid var(--border); }
+    #previewRender h2 { font-size: 1.35em; }
+    #previewRender h3 { font-size: 1.15em; }
+    #previewRender h4 { font-size: 1em; }
+
+    #previewRender p,
+    #previewRender ul,
+    #previewRender ol,
+    #previewRender pre,
+    #previewRender table,
+    #previewRender blockquote {
+      margin-bottom: 1em;
+    }
+
+    #previewRender a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.15s;
+    }
+
+    #previewRender a:hover { border-bottom-color: var(--accent); }
+
+    #previewRender strong { font-weight: 600; color: var(--text); }
+    #previewRender em { font-style: italic; }
+
+    #previewRender ul, #previewRender ol { padding-left: 1.5em; }
+    #previewRender li { margin-bottom: 0.25em; }
+    #previewRender li::marker { color: var(--text-tertiary); }
+
+    #previewRender blockquote {
+      border-left: 3px solid var(--border-strong);
+      padding: 8px 16px;
+      color: var(--text-secondary);
+      background: var(--surface-hover);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    #previewRender blockquote p:last-child { margin-bottom: 0; }
+
+    #previewRender code {
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: var(--surface-raised);
+      color: var(--accent);
+    }
+
+    #previewRender pre {
+      background: var(--code-bg);
+      color: #e5e5e5;
+      border-radius: var(--radius);
+      overflow: auto;
+      position: relative;
+      padding-top: 36px;
+      border: 1px solid var(--border);
+    }
+
+    #previewRender pre code {
+      display: block;
+      background: transparent;
+      color: inherit;
+      padding: 0 16px 14px;
+      font-size: 12.5px;
+      line-height: 1.65;
+      white-space: pre;
+      border-radius: 0;
+    }
+
+    .code-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .code-lang {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-family: var(--font-mono);
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-tertiary);
+      border-radius: 6px;
+      font-size: 10px;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: auto;
+      z-index: 3;
+    }
+
+    #previewRender pre:hover .copy-btn {
+      opacity: 1;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255,255,255,0.10);
+      color: #e5e5e5;
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .copy-btn.copied {
+      color: #22c55e;
+      border-color: rgba(34,197,94,0.25);
+      background: rgba(34,197,94,0.08);
+    }
+
+    #previewRender table {
+      width: 100%;
+      border-collapse: collapse;
+      display: block;
+      overflow: auto;
+      font-size: 14px;
+    }
+
+    #previewRender th,
+    #previewRender td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    #previewRender th {
+      background: var(--surface-hover);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    #previewRender tr:nth-child(even) { background: var(--surface-hover); }
+
+    #previewRender hr {
+      border: none;
+      height: 1px;
+      background: var(--border);
+      margin: 2em 0;
+    }
+
+    #previewRender img {
+      max-width: 100%;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    #previewRender input[type="checkbox"] {
+      margin-right: 6px;
+      accent-color: var(--accent);
+    }
+
+    .mermaid {
+      position: relative;
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .mermaid-inner {
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      overflow: auto;
+    }
+
+    .mermaid-toolbar {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 2;
+    }
+
+    .mermaid:hover .mermaid-toolbar {
+      opacity: 1;
+    }
+
+    .mermaid-download-btn {
+      height: 24px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.12s;
+    }
+
+    .mermaid-download-btn:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .mermaid-scale-select {
+      height: 24px;
+      min-width: 56px;
+      padding: 0 20px 0 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-sans);
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+      background-position: calc(100% - 12px) 9px, calc(100% - 8px) 9px;
+      background-size: 4px 4px, 4px 4px;
+      background-repeat: no-repeat;
+      cursor: pointer;
+    }
+
+    .mermaid-scale-select:hover,
+    .mermaid-scale-select:focus {
+      border-color: var(--accent);
+      color: var(--accent);
+      outline: none;
+    }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-tertiary);
+      text-align: center;
+      padding: 40px;
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      stroke: var(--border-strong);
+      fill: none;
+      stroke-width: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      line-height: 1.6;
+      max-width: 280px;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--text);
+      color: var(--surface);
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      opacity: 0;
+      transform: translateY(6px);
+      animation: toastIn 0.2s forwards, toastOut 0.2s 1.8s forwards;
+    }
+
+    @keyframes toastIn { to { opacity: 1; transform: translateY(0); } }
+    @keyframes toastOut { to { opacity: 0; transform: translateY(-4px); } }
+
+    /* Drop zone */
+    .drop-zone {
+      position: fixed;
+      inset: 6px;
+      border: 2px dashed var(--accent);
+      border-radius: var(--radius);
+      background: var(--accent-soft);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 15px;
+      font-weight: 500;
+      z-index: 150;
+      pointer-events: none;
+      letter-spacing: -0.01em;
+    }
+
+    .drop-zone.active { display: flex; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .app-main { grid-template-columns: 1fr; }
+      .resize-handle { display: none; }
+      .filename-field input { width: 80px; }
+      .toolbar-btn .btn-label { display: none; }
+      #previewRender { padding: 16px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="app-header-left">
+      <div class="app-logo">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <span class="app-title">Markdown → HTML</span>
+    </div>
+    <div class="app-header-right">
+      <div class="filename-field">
+        <input id="filenameInput" value="markdown-output" placeholder="文件名">
+        <span>.html</span>
+      </div>
+      <button class="toolbar-btn" id="sampleBtn" title="加载示例">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="btn-label">示例</span>
+      </button>
+      <button class="toolbar-btn" id="insertCodeBtn" title="插入代码块">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <span class="btn-label">代码</span>
+      </button>
+      <button class="toolbar-btn" id="findBtn" title="查找替换 (Ctrl+F)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="btn-label">查找</span>
+      </button>
+      <span class="toolbar-sep"></span>
+      <button class="toolbar-btn icon-only" id="themeBtn" title="切换主题">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+      <button class="toolbar-btn" id="uploadBtn" title="导入 .md 文件">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span class="btn-label">导入</span>
+      </button>
+      <button class="toolbar-btn primary" id="downloadBtn" title="导出 HTML (Ctrl+S)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span class="btn-label">导出</span>
+      </button>
+      <button class="toolbar-btn primary" id="copyHtmlBtn" title="复制 HTML (Ctrl+Shift+C)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span class="btn-label">复制</span>
+      </button>
+      <input id="fileInput" type="file" accept=".md,.markdown,.txt" style="display:none">
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- Editor Panel -->
+    <section class="app-panel">
+      <div class="panel-bar">
+        <div class="panel-bar-left">
+          <span class="panel-label">编辑器</span>
+          <span class="panel-stat" id="lineStat">0 行</span>
+          <span class="panel-stat" id="wordStat">0 词</span>
+          <span class="panel-stat" id="charStat">0 字符</span>
+        </div>
+      </div>
+      <div class="editor-body">
+        <div class="line-gutter" id="lineGutter"><pre>1</pre></div>
+        <div class="editor-area">
+          <div class="current-line" id="currentLine"></div>
+          <textarea id="editor" spellcheck="false" placeholder="# 在此输入 Markdown&#10;&#10;支持 Mermaid 流程图、KaTeX 数学公式&#10;快捷键：Ctrl+S 导出 ｜ Ctrl+F 查找 ｜ Ctrl+Shift+C 复制"></textarea>
+          <div class="find-box" id="findBox">
+            <div class="find-row">
+              <input id="findInput" placeholder="查找内容">
+              <button class="toolbar-btn" id="findNextBtn">下一个</button>
+            </div>
+            <div class="find-row">
+              <input id="replaceInput" placeholder="替换为">
+              <button class="toolbar-btn" id="replaceOneBtn">替换</button>
+              <button class="toolbar-btn" id="replaceAllBtn">全部</button>
+            </div>
+            <div class="find-row" style="justify-content:flex-end">
+              <button class="toolbar-btn" id="closeFindBtn">关闭</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="resize-handle" id="resizeHandle" title="拖拽调整面板宽度"></div>
+
+    <!-- Preview Panel -->
+    <section class="app-panel">
+      <div class="panel-bar">
+        <div class="panel-bar-left">
+          <span class="panel-label">预览</span>
+        </div>
+        <div class="panel-bar-right">
+          <div class="panel-tabs">
+            <button class="panel-tab active" id="previewTab">预览</button>
+            <button class="panel-tab" id="sourceTab">源码</button>
+          </div>
+          <span class="panel-stat" id="renderStat">0ms</span>
+          <span class="panel-stat" id="sizeStat">0 B</span>
+        </div>
+      </div>
+      <div class="preview-body">
+        <div class="preview-pane active" id="previewPane">
+          <div id="previewRender">
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+              <h3>开始编写</h3>
+              <p>在左侧编辑器输入 Markdown，预览将实时同步更新。<br>支持拖拽导入 .md 文件。</p>
+            </div>
+          </div>
+        </div>
+        <pre class="preview-pane" id="sourcePane"></pre>
+      </div>
+    </section>
+  </main>
+
+  <div class="drop-zone" id="dropZone">释放文件以导入 Markdown</div>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // ============ Init Libraries ============
+    marked.setOptions({ gfm: true, breaks: true });
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'default' });
+
+    // ============ DOM Refs ============
+    const editor = document.getElementById('editor');
+    const lineGutter = document.getElementById('lineGutter');
+    const currentLine = document.getElementById('currentLine');
+    const previewRender = document.getElementById('previewRender');
+    const previewPane = document.getElementById('previewPane');
+    const sourcePane = document.getElementById('sourcePane');
+    const renderStat = document.getElementById('renderStat');
+    const sizeStat = document.getElementById('sizeStat');
+    const toastContainer = document.getElementById('toastContainer');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const filenameInput = document.getElementById('filenameInput');
+    const findBox = document.getElementById('findBox');
+    const findInput = document.getElementById('findInput');
+    const replaceInput = document.getElementById('replaceInput');
+
+    let renderTimer = null;
+    let isSyncingFromEditor = false;
+    let isSyncingFromPreview = false;
+    let parseWorker = null;
+    let renderToken = 0;
+
+    // ============ Worker ============
+    function initWorker() {
+      const code = `
+        self.importScripts('https://cdn.jsdelivr.net/npm/marked/marked.min.js');
+        self.onmessage = function(ev) {
+          var data = ev.data;
+          var t0 = performance.now();
+          try {
+            var html = marked.parse(data.markdown || '');
+            self.postMessage({ id: data.id, ok: true, html: html, workerMs: performance.now() - t0 });
+          } catch(err) {
+            self.postMessage({ id: data.id, ok: false, error: String(err), workerMs: performance.now() - t0 });
+          }
+        };
+      `;
+      parseWorker = new Worker(URL.createObjectURL(new Blob([code], { type: 'application/javascript' })));
+    }
+
+    // ============ Utils ============
+    function toast(msg, type) {
+      const el = document.createElement('div');
+      el.className = 'toast';
+      if (type === 'err') el.style.background = '#7f1d1d';
+      el.textContent = msg;
+      toastContainer.appendChild(el);
+      setTimeout(() => el.remove(), 2100);
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function updateStats(md, html) {
+      const lines = md.length ? md.split('\n').length : 1;
+      const words = (md.match(/\S+/g) || []).length;
+      document.getElementById('lineStat').textContent = lines + ' 行';
+      document.getElementById('wordStat').textContent = words + ' 词';
+      document.getElementById('charStat').textContent = md.length + ' 字符';
+      sizeStat.textContent = formatBytes(new Blob([html]).size);
+    }
+
+    // ============ Line Numbers & Highlight ============
+    function updateLineNumbers() {
+      const count = Math.max(1, editor.value.split('\n').length);
+      let txt = '';
+      for (let i = 1; i <= count; i++) txt += i + '\n';
+      lineGutter.innerHTML = '<pre>' + txt + '</pre>';
+      lineGutter.scrollTop = editor.scrollTop;
+    }
+
+    function updateCurrentLine() {
+      const before = editor.value.slice(0, editor.selectionStart);
+      const line = before.split('\n').length;
+      const lh = 13 * 1.7;
+      const top = (line - 1) * lh - editor.scrollTop + 12;
+      currentLine.style.height = lh + 'px';
+      currentLine.style.transform = 'translateY(' + top + 'px)';
+    }
+
+    // ============ Render Pipeline ============
+    function renderMarkdown() {
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(() => {
+        const md = editor.value;
+        const t0 = performance.now();
+        const token = ++renderToken;
+
+        if (!parseWorker) initWorker();
+
+        parseWorker.onmessage = (ev) => {
+          const d = ev.data;
+          if (d.id !== token) return;
+
+          if (!d.ok) {
+            previewRender.innerHTML = '<pre style="color:#dc2626;padding:20px">' + escapeHtml(d.error) + '</pre>';
+            sourcePane.textContent = '';
+            return;
+          }
+
+          const isLarge = md.length > 14000;
+          const afterPaint = () => {
+            sourcePane.textContent = d.html;
+            attachHeadingIds();
+            processMermaid();
+            processMath();
+            addCodeCopyButtons();
+            const total = performance.now() - t0;
+            renderStat.textContent = total.toFixed(0) + 'ms';
+            updateStats(md, d.html);
+            localStorage.setItem('md2html-content', md);
+          };
+
+          if (isLarge) {
+            chunkRender(d.html, afterPaint);
+          } else {
+            previewRender.innerHTML = d.html;
+            afterPaint();
+          }
+        };
+
+        parseWorker.postMessage({ id: token, markdown: md });
+      }, 120);
+    }
+
+    function chunkRender(html, done) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      previewRender.innerHTML = '';
+      const nodes = Array.from(tmp.childNodes);
+      const batch = 36;
+      let idx = 0;
+
+      function paint() {
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < batch && idx < nodes.length; i++, idx++) {
+          frag.appendChild(nodes[idx]);
+        }
+        previewRender.appendChild(frag);
+        if (idx < nodes.length) requestAnimationFrame(paint);
+        else done();
+      }
+      requestAnimationFrame(paint);
+    }
+
+    // ============ Post-Process ============
+    function attachHeadingIds() {
+      previewRender.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach((h, i) => {
+        if (!h.id) h.id = 'h-' + i;
+      });
+    }
+
+    function normalizeMermaidSource(code) {
+      const raw = (code.textContent || '').trim();
+      const isFlowchartFence = code.classList.contains('language-flowchart');
+      const isSequenceFence = code.classList.contains('language-seq') || code.classList.contains('language-sequence');
+
+      // sequenceDiagram shorthand: auto-prepend "sequenceDiagram" if missing
+      if (isSequenceFence) {
+        if (/^sequenceDiagram/i.test(raw)) return raw;
+        return 'sequenceDiagram\n' + raw;
+      }
+
+      // flowchart shorthand: auto-prepend "flowchart" if only direction given
+      if (isFlowchartFence) {
+        if (/^(flowchart|graph)\s+/i.test(raw)) return raw;
+        const lines = raw.split('\n');
+        const head = (lines.shift() || 'TB').trim();
+        return 'flowchart ' + (head || 'TB') + '\n' + lines.join('\n');
+      }
+
+      return raw;
+    }
+
+    function processMermaid() {
+      previewRender.querySelectorAll('pre code.language-mermaid, pre code.language-seq, pre code.language-sequence, pre code.language-sequencediagram, pre code.language-flowchart').forEach(code => {
+        const pre = code.closest('pre');
+        const wrap = document.createElement('div');
+        wrap.className = 'mermaid';
+        const source = normalizeMermaidSource(code);
+        wrap.textContent = source;
+        wrap.setAttribute('data-mermaid-source', source);
+        pre.replaceWith(wrap);
+      });
+      const nodes = previewRender.querySelectorAll('.mermaid');
+      if (nodes.length) {
+        const currentToken = renderToken;
+        mermaid.run({ nodes }).then(() => {
+          if (renderToken === currentToken) addMermaidDownloadButtons();
+        }).catch(() => {});
+      }
+    }
+
+    function processMath() {
+      try {
+        renderMathInElement(previewRender, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true }
+          ],
+          throwOnError: false
+        });
+      } catch (_) {}
+    }
+
+    const LANG_ALIASES = {
+      'c': 'c', 'c++': 'cpp', 'cpp': 'cpp', 'c#': 'csharp', 'csharp': 'csharp',
+      'java': 'java', 'python': 'python', 'py': 'python', 'go': 'go', 'golang': 'go',
+      'js': 'javascript', 'javascript': 'javascript', 'ts': 'typescript', 'typescript': 'typescript',
+      'rb': 'ruby', 'ruby': 'ruby', 'sh': 'bash', 'bash': 'bash', 'shell': 'bash',
+      'yml': 'yaml', 'yaml': 'yaml', 'json': 'json', 'xml': 'xml', 'html': 'xml',
+      'css': 'css', 'sql': 'sql', 'rust': 'rust', 'rs': 'rust'
+    };
+
+    function highlightCode(code, lang) {
+      const mapped = LANG_ALIASES[lang] || lang;
+      const text = code.textContent.trim();
+      if (!text) return;
+      // 保存原始文本，防止高亮失败后内容丢失
+      const originalHTML = code.innerHTML;
+      try {
+        const result = hljs.highlight(text, { language: mapped, ignoreIllegals: true });
+        if (result.value && result.value.includes('<span')) {
+          code.innerHTML = result.value;
+          return;
+        }
+      } catch (_) {}
+      // Fallback: 恢复原始内容后用 highlightElement
+      code.innerHTML = originalHTML;
+      try {
+        code.className = (code.className + ' language-' + mapped).trim();
+        hljs.highlightElement(code);
+      } catch (_) {}
+    }
+
+    const COPY_ICON_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    const CHECK_ICON_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+    function addCodeCopyButtons() {
+      previewRender.querySelectorAll('pre code').forEach(code => {
+        const pre = code.closest('pre');
+        if (pre.dataset.ready) return;
+        pre.dataset.ready = '1';
+
+        const langClass = Array.from(code.classList).find(c => c.startsWith('language-')) || '';
+        let lang = (langClass.replace('language-', '') || 'text').toLowerCase();
+        const displayLang = LANG_ALIASES[lang] || lang;
+
+        const header = document.createElement('div');
+        header.className = 'code-header';
+
+        const langLabel = document.createElement('span');
+        langLabel.className = 'code-lang';
+        langLabel.textContent = displayLang;
+        header.appendChild(langLabel);
+        pre.prepend(header);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-btn';
+        copyBtn.title = '复制';
+        copyBtn.innerHTML = COPY_ICON_SVG;
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(code.textContent || '').then(() => {
+            copyBtn.classList.add('copied');
+            copyBtn.innerHTML = CHECK_ICON_SVG;
+            toast('代码已复制');
+            setTimeout(() => {
+              copyBtn.classList.remove('copied');
+              copyBtn.innerHTML = COPY_ICON_SVG;
+            }, 1500);
+          });
+        };
+        pre.appendChild(copyBtn);
+
+        highlightCode(code, lang);
+      });
+    }
+
+    function addMermaidDownloadButtons() {
+      previewRender.querySelectorAll('.mermaid').forEach((container, index) => {
+        const svg = container.querySelector('svg');
+        if (!svg || container.dataset.downloadReady) return;
+        container.dataset.downloadReady = '1';
+
+        const inner = document.createElement('div');
+        inner.className = 'mermaid-inner';
+        while (container.firstChild) inner.appendChild(container.firstChild);
+        container.appendChild(inner);
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'mermaid-toolbar';
+
+        const scaleSelect = document.createElement('select');
+        scaleSelect.className = 'mermaid-scale-select';
+        scaleSelect.title = 'PNG 清晰度倍率';
+        [1, 2, 4, 6].forEach(scale => {
+          const opt = document.createElement('option');
+          opt.value = String(scale);
+          opt.textContent = scale + 'x';
+          if (scale === 4) opt.selected = true;
+          scaleSelect.appendChild(opt);
+        });
+
+        const svgBtn = document.createElement('button');
+        svgBtn.className = 'mermaid-download-btn';
+        svgBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> SVG';
+        svgBtn.onclick = () => downloadMermaidSVG(svg, index);
+
+        const pngBtn = document.createElement('button');
+        pngBtn.className = 'mermaid-download-btn';
+        pngBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PNG';
+        pngBtn.onclick = () => {
+          const scale = Math.max(1, Number(scaleSelect.value) || 1);
+          downloadMermaidPNG(svg, index, scale);
+        };
+
+        toolbar.appendChild(scaleSelect);
+        toolbar.appendChild(svgBtn);
+        toolbar.appendChild(pngBtn);
+        container.appendChild(toolbar);
+      });
+    }
+
+    function downloadMermaidSVG(svg, index) {
+      const bbox = svg.getBBox();
+      const pad = 20;
+      const vx = bbox.x - pad;
+      const vy = bbox.y - pad;
+      const vw = bbox.width + pad * 2;
+      const vh = bbox.height + pad * 2;
+
+      const clone = svg.cloneNode(true);
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.setAttribute('viewBox', vx + ' ' + vy + ' ' + vw + ' ' + vh);
+      clone.setAttribute('width', vw);
+      clone.setAttribute('height', vh);
+      clone.removeAttribute('style');
+
+      const svgData = new XMLSerializer().serializeToString(clone);
+      const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'diagram-' + (index + 1) + '.svg';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      toast('SVG 已下载');
+    }
+
+    function downloadMermaidPNG(svg, index, scale) {
+      const bbox = svg.getBBox();
+      const pad = 20;
+      const vw = Math.ceil(bbox.width + pad * 2);
+      const vh = Math.ceil(bbox.height + pad * 2);
+      const ratio = Math.max(1, scale || 1);
+
+      const clone = svg.cloneNode(true);
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+      clone.setAttribute('viewBox', (bbox.x - pad) + ' ' + (bbox.y - pad) + ' ' + vw + ' ' + vh);
+      clone.setAttribute('width', vw);
+      clone.setAttribute('height', vh);
+      clone.removeAttribute('style');
+
+      const svgData = new XMLSerializer().serializeToString(clone);
+      const svgBase64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = vw * ratio;
+      canvas.height = vh * ratio;
+      const ctx = canvas.getContext('2d');
+
+      const img = new Image();
+      img.onload = function() {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(function(blob) {
+          if (!blob) { toast('PNG 导出失败', 'err'); return; }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'diagram-' + (index + 1) + '.png';
+          document.body.appendChild(a); a.click(); a.remove();
+          URL.revokeObjectURL(url);
+          toast('PNG 已下载（' + ratio + 'x）');
+        }, 'image/png');
+      };
+      img.onerror = function() {
+        toast('PNG 导出失败，请使用 SVG 格式', 'err');
+      };
+      img.src = svgBase64;
+    }
+
+    // ============ Scroll Sync ============
+    function syncEditorToPreview() {
+      if (isSyncingFromPreview) return;
+      isSyncingFromEditor = true;
+      const eMax = editor.scrollHeight - editor.clientHeight;
+      const pMax = previewPane.scrollHeight - previewPane.clientHeight;
+      const ratio = eMax > 0 ? editor.scrollTop / eMax : 0;
+      previewPane.scrollTop = ratio * pMax;
+      lineGutter.scrollTop = editor.scrollTop;
+      isSyncingFromEditor = false;
+    }
+
+    function syncPreviewToEditor() {
+      if (isSyncingFromEditor) return;
+      isSyncingFromPreview = true;
+      const eMax = editor.scrollHeight - editor.clientHeight;
+      const pMax = previewPane.scrollHeight - previewPane.clientHeight;
+      const ratio = pMax > 0 ? previewPane.scrollTop / pMax : 0;
+      editor.scrollTop = ratio * eMax;
+      lineGutter.scrollTop = editor.scrollTop;
+      isSyncingFromPreview = false;
+    }
+
+    // ============ Export ============
+    function buildTOC() {
+      const hs = previewRender.querySelectorAll('h1,h2,h3');
+      if (!hs.length) return '';
+      let toc = '<nav style="border:1px solid #e5e5e5;background:#f5f5f5;border-radius:8px;padding:16px;margin-bottom:20px"><h2 style="margin:0 0 10px;font-size:16px">目录</h2><ul style="margin:0;padding:0;list-style:none">';
+      hs.forEach((h, i) => {
+        const id = h.id || 'h-' + i;
+        const ml = (Number(h.tagName[1]) - 1) * 14;
+        toc += '<li style="margin:3px 0;padding-left:' + ml + 'px"><a href="#' + id + '" style="color:#2563eb;text-decoration:none">' + escapeHtml(h.textContent || '') + '</a></li>';
+      });
+      toc += '</ul></nav>';
+      return toc;
+    }
+
+    function buildFullHTML() {
+      const bodyRaw = previewRender.innerHTML;
+      const cleaner = document.createElement('div');
+      cleaner.innerHTML = bodyRaw;
+      cleaner.querySelectorAll('.mermaid-toolbar').forEach(el => el.remove());
+
+      // Replace pre-rendered SVGs with Mermaid source code for client-side rendering
+      cleaner.querySelectorAll('.mermaid').forEach(el => {
+        const source = el.getAttribute('data-mermaid-source');
+        if (source) {
+          el.textContent = source;
+          el.removeAttribute('data-processed');
+          el.removeAttribute('data-mermaid-source');
+          el.removeAttribute('data-download-ready');
+        }
+      });
+
+      const body = cleaner.innerHTML;
+      const toc = buildTOC();
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const bg = dark ? '#0a0a0a' : '#fafafa';
+      const text = dark ? '#e5e5e5' : '#171717';
+      const border = dark ? '#262626' : '#e5e5e5';
+      const surface = dark ? '#111111' : '#ffffff';
+      const scriptCloseTag = '</scr' + 'ipt>';
+      const mermaidTheme = dark ? 'dark' : 'default';
+
+      const lbStyle = [
+        '/* lightbox */',
+        '.lb-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:none}',
+        '.lb-overlay.active{display:block}',
+        '.lb-stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;overflow:hidden;cursor:zoom-out}',
+        '.lb-media{max-width:90vw;max-height:90vh;transform-origin:center center;transition:transform .08s ease-out;cursor:grab;user-select:none;box-shadow:0 12px 48px rgba(0,0,0,0.35)}',
+        '.lb-img{border-radius:8px;object-fit:contain}',
+        '.lb-svg{background:#fff;border-radius:8px;padding:12px;box-sizing:border-box}',
+        '.lb-close{position:fixed;top:16px;right:16px;width:36px;height:36px;border:none;background:rgba(255,255,255,0.12);color:#fff;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;z-index:10000}',
+        '.lb-close:hover{background:rgba(255,255,255,0.25)}',
+        '.lb-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.7);font-size:12px;pointer-events:none;user-select:none;z-index:10000}',
+        'body.lb-open{overflow:hidden}',
+        '.mm-toolbar{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .2s;z-index:3}',
+        '.mermaid:hover .mm-toolbar{opacity:1}',
+        '.mm-btn{height:24px;padding:0 8px;border:1px solid ' + border + ';background:' + surface + ';color:' + text + ';border-radius:4px;font-size:11px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:4px}',
+        '.mm-btn:hover{background:' + (dark ? '#1a1a1a' : '#f5f5f5') + ';border-color:#2563eb;color:#2563eb}',
+        '.mm-scale{height:24px;min-width:56px;padding:0 20px 0 8px;border:1px solid ' + border + ';background:' + surface + ';color:' + text + ';border-radius:4px;font-size:11px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;cursor:pointer;appearance:none}'
+      ].join('');
+
+      const lbScript = [
+        '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"><' + '/script>',
+        '<script>',
+        '(function(){',
+        'var overlay=document.createElement("div");',
+        'overlay.className="lb-overlay";',
+        'overlay.innerHTML="<div class=\"lb-stage\"></div><button class=\"lb-close\" aria-label=\"关闭\">&times;</button><div class=\"lb-hint\">滚轮缩放 · 拖拽移动 · 点击空白/ESC 关闭</div>";',
+        'document.body.appendChild(overlay);',
+        'var stage=overlay.querySelector(".lb-stage");',
+        'var closeBtn=overlay.querySelector(".lb-close");',
+        'var activeEl=null,scale=1,tx=0,ty=0,isDragging=false,sx=0,sy=0;',
+        'function apply(){if(!activeEl)return;activeEl.style.transform="translate("+tx+"px,"+ty+"px) scale("+scale+")";}',
+        'function mount(el){stage.innerHTML="";activeEl=el;scale=1;tx=0;ty=0;isDragging=false;stage.appendChild(el);apply();overlay.classList.add("active");document.body.classList.add("lb-open");}',
+        'function openImage(img){var el=new Image();el.src=img.currentSrc||img.src;el.alt=img.alt||"";el.className="lb-media lb-img";mount(el);}',
+        'function openSvg(svg){var el=svg.cloneNode(true);el.classList.add("lb-media","lb-svg");el.removeAttribute("width");el.removeAttribute("height");mount(el);}',
+        'function close(){overlay.classList.remove("active");document.body.classList.remove("lb-open");stage.innerHTML="";activeEl=null;scale=1;tx=0;ty=0;isDragging=false;}',
+        'document.querySelectorAll("img").forEach(function(el){if(el.closest(".lb-overlay"))return;el.style.cursor="zoom-in";el.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();openImage(el);});});',
+        'overlay.addEventListener("click",function(e){if(e.target===overlay||e.target===stage)close();});',
+        'closeBtn.addEventListener("click",function(e){e.stopPropagation();close();});',
+        'document.addEventListener("keydown",function(e){if(e.key==="Escape"&&overlay.classList.contains("active"))close();});',
+        'overlay.addEventListener("wheel",function(e){if(!activeEl)return;e.preventDefault();var delta=e.deltaY<0?1.1:0.9;scale=Math.min(Math.max(scale*delta,0.25),8);apply();},{passive:false});',
+        'stage.addEventListener("mousedown",function(e){if(!activeEl||e.target!==activeEl)return;isDragging=true;sx=e.clientX-tx;sy=e.clientY-ty;activeEl.style.cursor="grabbing";e.preventDefault();});',
+        'document.addEventListener("mousemove",function(e){if(!isDragging||!activeEl)return;tx=e.clientX-sx;ty=e.clientY-sy;apply();});',
+        'document.addEventListener("mouseup",function(){if(activeEl)activeEl.style.cursor="grab";isDragging=false;});',
+        'function toast(msg){var t=document.createElement("div");t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#171717;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;z-index:99999;opacity:0;transition:opacity .2s";t.textContent=msg;document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity="1"});setTimeout(function(){t.style.opacity="0";setTimeout(function(){t.remove()},200)},2000);}',
+        'function downloadSvg(svg,index){var bbox=svg.getBBox();var pad=20;var vx=bbox.x-pad;var vy=bbox.y-pad;var vw=Math.ceil(bbox.width+pad*2);var vh=Math.ceil(bbox.height+pad*2);var clone=svg.cloneNode(true);clone.setAttribute("xmlns","http://www.w3.org/2000/svg");clone.setAttribute("viewBox",vx+" "+vy+" "+vw+" "+vh);clone.setAttribute("width",vw);clone.setAttribute("height",vh);clone.removeAttribute("style");var data=new XMLSerializer().serializeToString(clone);var blob=new Blob([data],{type:"image/svg+xml;charset=utf-8"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="diagram-"+(index+1)+".svg";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast("SVG 已下载");}',
+        'function downloadPng(svg,index,ratio){var bbox=svg.getBBox();var pad=20;var vw=Math.ceil(bbox.width+pad*2);var vh=Math.ceil(bbox.height+pad*2);var sc=Math.max(1,ratio||1);var clone=svg.cloneNode(true);clone.setAttribute("xmlns","http://www.w3.org/2000/svg");clone.setAttribute("xmlns:xlink","http://www.w3.org/1999/xlink");clone.setAttribute("viewBox",(bbox.x-pad)+" "+(bbox.y-pad)+" "+vw+" "+vh);clone.setAttribute("width",vw);clone.setAttribute("height",vh);clone.removeAttribute("style");var data=new XMLSerializer().serializeToString(clone);var base64="data:image/svg+xml;base64,"+btoa(unescape(encodeURIComponent(data)));var canvas=document.createElement("canvas");canvas.width=vw*sc;canvas.height=vh*sc;var ctx=canvas.getContext("2d");var img=new Image();img.onload=function(){ctx.fillStyle="#ffffff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);canvas.toBlob(function(blob){if(!blob){toast("PNG 导出失败");return;}var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="diagram-"+(index+1)+".png";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast("PNG 已下载（"+sc+"x）");},"image/png");};img.onerror=function(){toast("PNG 导出失败，请使用 SVG 格式");};img.src=base64;}',
+        'function bindMermaidInteractions(){',
+        '  document.querySelectorAll(".mermaid").forEach(function(container,idx){',
+        '    var svg=container.querySelector("svg");',
+        '    if(!svg)return;',
+        '    container.style.position="relative";',
+        '    var overlay_div=document.createElement("div");',
+        '    overlay_div.style.cssText="position:absolute;inset:0;cursor:zoom-in;z-index:1";',
+        '    overlay_div.setAttribute("tabindex","0");',
+        '    overlay_div.setAttribute("role","button");',
+        '    overlay_div.setAttribute("aria-label","点击放大查看流程图");',
+        '    overlay_div.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();openSvg(svg);});',
+        '    overlay_div.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();openSvg(svg);}});',
+        '    container.appendChild(overlay_div);',
+        '    var tb=document.createElement("div");',
+        '    tb.className="mm-toolbar";',
+        '    tb.innerHTML="<select class=\"mm-scale\"><option value=\"1\">1x</option><option value=\"2\">2x</option><option value=\"4\" selected>4x</option><option value=\"6\">6x</option></select><button class=\"mm-btn mm-svg\">SVG</button><button class=\"mm-btn mm-png\">PNG</button>";',
+        '    container.appendChild(tb);',
+        '    var sel=tb.querySelector(".mm-scale");',
+        '    tb.querySelector(".mm-svg").addEventListener("click",function(e){e.stopPropagation();downloadSvg(svg,idx);});',
+        '    tb.querySelector(".mm-png").addEventListener("click",function(e){e.stopPropagation();var scl=Math.max(1,Number(sel.value)||1);downloadPng(svg,idx,scl);});',
+        '  });',
+        '}',
+        'var COPY_SVG=\'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>\';',
+        'var CHECK_SVG=\'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>\';',
+        'document.querySelectorAll(".copy-btn").forEach(function(btn){btn.addEventListener("click",function(e){e.stopPropagation();var code=btn.closest("pre").querySelector("code");if(!code)return;navigator.clipboard.writeText(code.textContent||"").then(function(){btn.classList.add("copied");btn.innerHTML=CHECK_SVG;setTimeout(function(){btn.classList.remove("copied");btn.innerHTML=COPY_SVG;},1500);});});});',
+        'if(typeof mermaid!=="undefined"){',
+        '  mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"' + mermaidTheme + '"});',
+        '  mermaid.run().then(function(){bindMermaidInteractions();}).catch(function(){bindMermaidInteractions();});',
+        '}else{',
+        '  bindMermaidInteractions();',
+        '}',
+        '})();',
+        scriptCloseTag
+      ].join('');
+
+      return '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + escapeHtml(filenameInput.value || 'markdown-output') + '</title>\n<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />\n<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css" />\n<style>\nbody{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;max-width:860px;margin:0 auto;padding:32px 20px 60px;background:' + bg + ';color:' + text + ';line-height:1.75}\nnav{border:1px solid ' + border + ';background:' + surface + ';border-radius:8px;padding:16px;margin-bottom:20px}\nnav h2{margin:0 0 10px;font-size:16px}\nnav ul{margin:0;padding:0;list-style:none}\nnav li{margin:3px 0}\nnav a{color:#2563eb;text-decoration:none}\nh1{font-size:1.75em;border-bottom:1px solid ' + border + ';padding-bottom:.3em;margin:0 0 .6em}\nh2{font-size:1.35em;margin-top:1.6em}\nh3{font-size:1.15em}\ntable{display:block;overflow:auto;border-collapse:collapse;width:100%}\nth,td{border:1px solid ' + border + ';padding:8px 12px;white-space:nowrap}\nth{background:' + surface + ';font-weight:600}\npre{background:#0a0a0a;color:#e5e5e5;padding:36px 16px 12px;border-radius:8px;overflow:auto;position:relative}\ncode{font-family:"SF Mono","Fira Code",Consolas,monospace;font-size:.88em}\npre code{display:block;background:transparent;padding:0 16px 14px;font-size:12.5px;line-height:1.65;white-space:pre}\npre code.hljs{background:transparent!important}\n.code-header{position:absolute;top:0;left:0;right:0;height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;pointer-events:none;z-index:2}\n.code-lang{font-size:10px;color:#525252;text-transform:uppercase;letter-spacing:0.05em;font-family:"SF Mono","Fira Code",Consolas,monospace;user-select:none;pointer-events:none}\n.copy-btn{position:absolute;top:6px;right:8px;width:28px;height:28px;padding:0;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#525252;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;opacity:0;transition:all 0.15s;pointer-events:auto;z-index:3}\npre:hover .copy-btn{opacity:1}\n.copy-btn:hover{background:rgba(255,255,255,0.10);color:#e5e5e5;border-color:rgba(255,255,255,0.15)}\n.copy-btn.copied{color:#22c55e;border-color:rgba(34,197,94,0.25);background:rgba(34,197,94,0.08)}\nblockquote{border-left:3px solid ' + border + ';padding:8px 16px;color:#525252;background:' + surface + ';border-radius:0 6px 6px 0}\nimg{max-width:100%;border-radius:8px}\n.mermaid{background:' + surface + ';border:1px solid ' + border + ';border-radius:8px;padding:16px;display:flex;justify-content:center;position:relative}\n.mermaid-inner{display:flex;justify-content:center;overflow:auto}\n.mermaid svg{max-width:100%;height:auto}\n' + lbStyle + '\n</style>\n</head>\n<body>\n' + toc + body + '\n' + lbScript + '\n</body>\n</html>';
+    }
+    function downloadHTML() {
+      const html = buildFullHTML();
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const name = (filenameInput.value || 'markdown-output').replace(/\.html$/i, '');
+      a.href = url;
+      a.download = name + '.html';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      toast('HTML 已导出');
+    }
+
+    function copyHTML() {
+      navigator.clipboard.writeText(buildFullHTML()).then(() => toast('HTML 源码已复制'));
+    }
+
+    // ============ Features ============
+    function insertCodeBlock() {
+      const template = '\n```javascript\n// 在此输入代码\nconsole.log("Hello Markdown");\n```\n';
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      editor.value = editor.value.slice(0, start) + template + editor.value.slice(end);
+      const pos = start + template.length;
+      editor.setSelectionRange(pos, pos);
+      editor.focus();
+      onEditorChange();
+    }
+
+    function findNext() {
+      const q = findInput.value;
+      if (!q) return;
+      const from = editor.selectionEnd;
+      const text = editor.value;
+      let idx = text.indexOf(q, from);
+      if (idx === -1) idx = text.indexOf(q, 0);
+      if (idx === -1) { toast('未找到', 'err'); return; }
+      editor.focus();
+      editor.setSelectionRange(idx, idx + q.length);
+      updateCurrentLine();
+    }
+
+    function replaceOne() {
+      const q = findInput.value;
+      if (!q) return;
+      const rep = replaceInput.value;
+      const s = editor.selectionStart;
+      const e = editor.selectionEnd;
+      if (editor.value.slice(s, e) === q) {
+        editor.value = editor.value.slice(0, s) + rep + editor.value.slice(e);
+        editor.setSelectionRange(s, s + rep.length);
+      } else {
+        findNext(); return;
+      }
+      onEditorChange();
+    }
+
+    function replaceAll() {
+      const q = findInput.value;
+      if (!q) return;
+      const rep = replaceInput.value;
+      const count = (editor.value.match(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+      editor.value = editor.value.split(q).join(rep);
+      onEditorChange();
+      toast('已替换 ' + count + ' 处');
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('md2html-theme', theme);
+    }
+
+    function toggleTheme() {
+      const now = document.documentElement.getAttribute('data-theme') || 'light';
+      applyTheme(now === 'dark' ? 'light' : 'dark');
+    }
+
+    function setView(mode) {
+      if (mode === 'source') {
+        previewPane.classList.remove('active');
+        sourcePane.classList.add('active');
+        document.getElementById('previewTab').classList.remove('active');
+        document.getElementById('sourceTab').classList.add('active');
+      } else {
+        sourcePane.classList.remove('active');
+        previewPane.classList.add('active');
+        document.getElementById('sourceTab').classList.remove('active');
+        document.getElementById('previewTab').classList.add('active');
+      }
+    }
+
+    // ============ File Handling ============
+    function handleFile(file) {
+      if (!file || !/\.(md|markdown|txt)$/i.test(file.name)) {
+        toast('只支持 .md / .txt 文件', 'err');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => { editor.value = e.target.result || ''; onEditorChange(); toast('已导入：' + file.name); };
+      reader.readAsText(file);
+      fileInput.value = ''; // 重置，否则同名文件再次选择不触发 change 事件
+    }
+
+    // ============ Editor Events ============
+    function onEditorChange() {
+      updateLineNumbers();
+      updateCurrentLine();
+      renderMarkdown();
+    }
+
+    function loadSample() {
+      if (editor.value.trim() && !confirm('加载示例将覆盖当前内容，继续吗？')) return;
+      localStorage.removeItem('md2html-content');
+      editor.value = `# Markdown → HTML 编辑器
+
+> 欢迎使用。这是一个完全在浏览器中运行的 Markdown 编辑器。
+
+## 核心功能
+
+- 实时预览，编辑器与预览双向滚动同步
+- 支持 **Mermaid** 流程图与 **KaTeX** 数学公式
+- 查找替换、代码块一键插入、行号与高亮
+- 导出带目录的完整 HTML 文件
+
+## 代码示例
+
+\`\`\`python
+for i in range(3):
+    print(f"hello {i}")
+\`\`\`
+
+## Mermaid 流程图
+
+\`\`\`mermaid
+graph LR
+    A[开始] --> B{判断}
+    B -->|是| C[处理]
+    B -->|否| D[结束]
+\`\`\`
+
+## 数学公式
+
+行内公式：$E = mc^2$
+
+块级公式：
+
+$$
+\\int_{0}^{1} x^2 \\, dx = \\frac{1}{3}
+$$
+
+## 表格
+
+| 功能 | 状态 |
+|------|------|
+| 实时预览 | 支持 |
+| 代码高亮 | 支持 |
+| 数学公式 | 支持 |
+| 流程图 | 支持 |
+`;
+      onEditorChange();
+      toast('已加载示例文档');
+    }
+
+    function init() {
+      applyTheme(localStorage.getItem('md2html-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+      filenameInput.value = localStorage.getItem('md2html-filename') || 'markdown-output';
+      filenameInput.addEventListener('input', () => localStorage.setItem('md2html-filename', filenameInput.value));
+
+      const saved = localStorage.getItem('md2html-content');
+      if (saved) {
+        editor.value = saved;
+      } else {
+        loadSample();
+        return; // loadSample calls onEditorChange
+      }
+      onEditorChange();
+    }
+
+    // ============ Bind Events ============
+    editor.addEventListener('input', onEditorChange);
+    editor.addEventListener('scroll', () => { updateCurrentLine(); syncEditorToPreview(); });
+    editor.addEventListener('click', updateCurrentLine);
+    editor.addEventListener('keyup', updateCurrentLine);
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') { e.preventDefault(); const s = editor.selectionStart; editor.value = editor.value.slice(0, s) + '  ' + editor.value.slice(editor.selectionEnd); editor.setSelectionRange(s + 2, s + 2); onEditorChange(); }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') { e.preventDefault(); findBox.style.display = 'flex'; findInput.focus(); }
+    });
+
+    previewPane.addEventListener('scroll', syncPreviewToEditor);
+
+    document.getElementById('downloadBtn').addEventListener('click', downloadHTML);
+    document.getElementById('copyHtmlBtn').addEventListener('click', copyHTML);
+    document.getElementById('uploadBtn').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+    document.getElementById('insertCodeBtn').addEventListener('click', insertCodeBlock);
+    document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+    document.getElementById('sampleBtn').addEventListener('click', loadSample);
+
+    document.getElementById('previewTab').addEventListener('click', () => setView('preview'));
+    document.getElementById('sourceTab').addEventListener('click', () => setView('source'));
+
+    document.getElementById('findBtn').addEventListener('click', () => { findBox.style.display = findBox.style.display === 'flex' ? 'none' : 'flex'; if (findBox.style.display === 'flex') findInput.focus(); });
+    document.getElementById('closeFindBtn').addEventListener('click', () => findBox.style.display = 'none');
+    document.getElementById('findNextBtn').addEventListener('click', findNext);
+    document.getElementById('replaceOneBtn').addEventListener('click', replaceOne);
+    document.getElementById('replaceAllBtn').addEventListener('click', replaceAll);
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); downloadHTML(); }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'c') { e.preventDefault(); copyHTML(); }
+    });
+
+    let dragCounter = 0;
+    document.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; dropZone.classList.add('active'); });
+    document.addEventListener('dragover', (e) => e.preventDefault());
+    document.addEventListener('dragleave', (e) => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dropZone.classList.remove('active'); } });
+    document.addEventListener('drop', (e) => { e.preventDefault(); dragCounter = 0; dropZone.classList.remove('active'); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) handleFile(f); });
+
+    // ============ Panel Resize ============
+    (function() {
+      const appMain = document.querySelector('.app-main');
+      const handle = document.getElementById('resizeHandle');
+      if (!appMain || !handle) return;
+
+      let isResizing = false;
+      let savedRatio = parseFloat(localStorage.getItem('md2html-split-ratio') || '0.5');
+
+      // Clamp ratio between 0.2 and 0.8
+      savedRatio = Math.min(0.8, Math.max(0.2, savedRatio));
+
+      function applyRatio(ratio) {
+        // grid-template-columns: first-panel handle second-panel
+        appMain.style.gridTemplateColumns = ratio * 100 + '% 4px ' + (1 - ratio) * 100 + '%';
+      }
+
+      // Apply saved ratio on load
+      applyRatio(savedRatio);
+
+      handle.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        isResizing = true;
+        handle.classList.add('active');
+        document.body.classList.add('resize-active');
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        const rect = appMain.getBoundingClientRect();
+        const totalWidth = rect.width;
+        const offsetX = e.clientX - rect.left;
+        let ratio = offsetX / totalWidth;
+        ratio = Math.min(0.8, Math.max(0.2, ratio));
+        applyRatio(ratio);
+        savedRatio = ratio;
+      });
+
+      document.addEventListener('mouseup', function() {
+        if (!isResizing) return;
+        isResizing = false;
+        handle.classList.remove('active');
+        document.body.classList.remove('resize-active');
+        localStorage.setItem('md2html-split-ratio', savedRatio.toFixed(4));
+      });
+    })();
+
+    init();
+  </script>
+</body>
+</html>
