@@ -42,9 +42,9 @@ docker-compose up -d
 ```bash
 cd backend
 
-# 配置环境变量
-cp .env.example .env
-# 编辑 .env 填入 MySQL 连接信息
+# 配置
+cp config.yaml.example config.yaml
+# 编辑 config.yaml 填入 MySQL 连接信息
 
 # 安装依赖 & 启动
 go mod tidy

@@ -41,9 +41,10 @@ func SetupRouter(
 		md2html.POST("/convert", convertHandler.ConvertMarkdown)
 
 		// 需认证接口
-		md2html.GET("/history", middleware.Auth(), historyHandler.GetHistory)
-		md2html.POST("/history", middleware.Auth(), historyHandler.SaveHistory)
-		md2html.DELETE("/history/:id", middleware.Auth(), historyHandler.DeleteHistory)
+		md2html.GET("/history", middleware.Auth(), historyHandler.GetHistory)           // 列表（轻量）
+		md2html.GET("/history/:id", middleware.Auth(), historyHandler.GetHistoryDetail)  // 详情（新增）
+		md2html.POST("/history", middleware.Auth(), historyHandler.SaveHistory)           // 保存
+		md2html.DELETE("/history/:id", middleware.Auth(), historyHandler.DeleteHistory)   // 删除
 
 		// 主题（公开）
 		md2html.GET("/themes", themeHandler.GetThemes)

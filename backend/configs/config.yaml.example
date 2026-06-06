@@ -1,0 +1,17 @@
+# yfTools 后端配置文件模板
+# 复制为 config.yaml 并填写实际值
+
+server:
+  port: 8000
+  mode: debug   # debug / release
+
+database:
+  host: 127.0.0.1
+  port: 3306
+  name: yftools
+  user: root
+  password: ""
+
+jwt:
+  secret: change-me-in-production
+  expire: 168h

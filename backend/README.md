@@ -46,7 +46,7 @@ backend/
 │   └── response/response.go     # 统一响应格式
 ├── migrations/                   # SQL 迁移文件
 ├── configs/                      # 配置文件
-├── .env.example                  # 环境变量模板
+├── .env.example                  # 环境变量模板（已弃用）
 ├── Dockerfile                    # Docker 构建
 └── go.mod
 ```
@@ -58,26 +58,29 @@ backend/
 - Go 1.22+
 - MySQL 8.0+
 
-### 1. 配置环境变量
+### 1. 配置
 
 ```bash
-cp .env.example .env
+cp configs/config.yaml.example configs/config.yaml
 ```
 
-编辑 `.env` 填入实际值：
+编辑 `configs/config.yaml` 填入实际值：
 
-```env
-PORT=8000
-GIN_MODE=debug
+```yaml
+server:
+  port: 8000
+  mode: debug
 
-MYSQL_HOST=127.0.0.1
-MYSQL_PORT=3306
-MYSQL_DATABASE=md2html
-MYSQL_USER=root
-MYSQL_PASSWORD=your_password
+database:
+  host: 127.0.0.1
+  port: 3306
+  name: yftools
+  user: root
+  password: your_password
 
-JWT_SECRET=your-secret-key
-JWT_EXPIRE=168h
+jwt:
+  secret: your-secret-key
+  expire: 168h
 ```
 
 ### 2. 安装依赖
@@ -92,7 +95,7 @@ go mod tidy
 go run cmd/server/main.go
 ```
 
-服务默认监听 `:8000`。首次启动时自动创建数据库表。
+服务默认监听 `:8000`。
 
 ### 4. 构建二进制
 
@@ -164,13 +167,7 @@ curl http://localhost:8000/api/health
 
 ## 数据库
 
-### 自动迁移
-
-首次启动时，`main.go` 调用 `repository.RunMigrations(db)` 自动创建以下表：
-
-- `users` — 用户表（BIGINT 主键）
-- `md2html_conversions` — 转换历史（工具名前缀）
-- `tool_configs` — 工具配置（多工具预留）
+数据库表需提前创建，启动时不会自动建表。
 
 ### 手动迁移
 

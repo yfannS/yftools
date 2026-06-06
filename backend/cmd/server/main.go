@@ -12,6 +12,7 @@ import (
 	"md2html/internal/service"
 	md2htmlService "md2html/internal/service/tools/md2html"
 	"md2html/pkg/converter"
+	appJwt "md2html/pkg/jwt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,15 +20,15 @@ import (
 func main() {
 	cfg := config.Load()
 
+	// 初始化 JWT 配置
+	appJwt.SetSecret(cfg.JWT.Secret)
+
 	// 设置 Gin 模式
 	gin.SetMode(cfg.Server.Mode)
 
 	// 初始化数据库
 	db := cfg.InitDB()
 	defer db.Close()
-
-	// 自动迁移
-	repository.RunMigrations(db)
 
 	// ====== Repository 层 ======
 	userRepo := repository.NewUserRepository(db)

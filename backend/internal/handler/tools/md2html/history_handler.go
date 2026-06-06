@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"md2html/internal/middleware"
-	md2htmlService "md2html/internal/service/tools/md2html"
 	"md2html/internal/model"
+	md2htmlService "md2html/internal/service/tools/md2html"
 	"md2html/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +20,7 @@ func NewHistoryHandler(historyService md2htmlService.HistoryService) *HistoryHan
 	return &HistoryHandler{historyService: historyService}
 }
 
+// GetHistory 获取历史记录列表（轻量，不含 markdown/html）
 func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 
@@ -40,13 +41,35 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	}
 
 	response.Success(c, model.HistoryPageResponse{
-		Data:  result.Data,
-		Total: result.Total,
-		Page:  result.Page,
-		Size:  result.Size,
+		Data:       result.Data,
+		Total:      result.Total,
+		Page:       result.Page,
+		Size:       result.Size,
+		TotalPages: result.TotalPages,
 	})
 }
 
+// GetHistoryDetail 获取历史记录详情（含完整 markdown）
+func (h *HistoryHandler) GetHistoryDetail(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "无效的记录 ID")
+		return
+	}
+
+	detail, err := h.historyService.GetDetail(id, userID)
+	if err != nil {
+		response.NotFound(c, "记录不存在")
+		return
+	}
+
+	response.Success(c, detail)
+}
+
+// SaveHistory 保存历史记录（html 可选，title 由后端自动从 markdown 提取）
 func (h *HistoryHandler) SaveHistory(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 
@@ -70,6 +93,7 @@ func (h *HistoryHandler) SaveHistory(c *gin.Context) {
 	response.SuccessWithMessage(c, "保存成功", gin.H{"id": id})
 }
 
+// DeleteHistory 删除历史记录
 func (h *HistoryHandler) DeleteHistory(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 

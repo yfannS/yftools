@@ -24,7 +24,7 @@ Thumbs.db
 *.sln
 
 # ---- Go 后端 ----
-backend/.env
+backend/configs/config.yaml
 backend/tmp/
 backend/md2html-server
 backend/md2html

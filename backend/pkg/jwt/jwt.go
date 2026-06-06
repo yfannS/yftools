@@ -1,7 +1,6 @@
 package jwt
 
 import (
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,8 +12,18 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+var jwtSecret string
+
+// SetSecret 初始化时由外部调用，将配置文件中的 secret 注入
+func SetSecret(secret string) {
+	jwtSecret = secret
+}
+
 func getSecret() []byte {
-	return []byte(os.Getenv("JWT_SECRET"))
+	if jwtSecret == "" {
+		jwtSecret = "default-secret-change-me"
+	}
+	return []byte(jwtSecret)
 }
 
 func GenerateToken(userID int64, username string, expireStr string) (string, error) {
