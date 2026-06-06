@@ -17,11 +17,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(user: string, password: string) {
-    const res = await authApi.login(user, password)
-    token.value = res.token
-    username.value = res.username
-    localStorage.setItem('m2h_webapp_token', res.token)
-    localStorage.setItem('m2h_webapp_username', res.username)
+    const data = await authApi.login(user, password)
+    token.value = data.token
+    username.value = data.username
+    localStorage.setItem('m2h_webapp_token', data.token)
+    localStorage.setItem('m2h_webapp_username', data.username)
   }
 
   async function register(user: string, password: string) {

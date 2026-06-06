@@ -130,6 +130,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { usePreviewStore } from '@/stores/preview'
 import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
 import { useMarkdownRender } from '@/composables/useMarkdownRender'
 import { useScrollSync } from '@/composables/useScrollSync'
 import { usePanelResize } from '@/composables/usePanelResize'
@@ -137,12 +138,14 @@ import { useFileIO } from '@/composables/useFileIO'
 import { useFindReplace } from '@/composables/useFindReplace'
 import { useToast } from '@/composables/useToast'
 import { useExportHtml } from '@/composables/useExportHtml'
+import { useAutoSave } from '@/composables/useAutoSave'
 import ToolbarBar from '@/components/md2html/ToolbarBar.vue'
 import OutlinePanel from '@/components/md2html/OutlinePanel.vue'
 
 const editorStore = useEditorStore()
 const previewStore = usePreviewStore()
 const appStore = useAppStore()
+const authStore = useAuthStore()
 
 // DOM refs
 const editorRef = ref<HTMLTextAreaElement>()
@@ -151,14 +154,18 @@ const previewRenderRef = ref<HTMLElement>()
 const previewPaneRef = ref<HTMLElement>()
 const mainRef = ref<HTMLElement>()
 
+// 渲染就绪标记（用于触发自动保存）
+const renderReady = ref(false)
+
 // Composables
 const { toast } = useToast()
 const markdownRender = useMarkdownRender(previewRenderRef, toast)
 const scrollSync = useScrollSync(editorRef, previewPaneRef, lineGutterRef)
 const panelResize = usePanelResize()
-const fileIO = useFileIO(toast, () => markdownRender.renderMarkdown())
-const findReplace = useFindReplace(editorRef, toast, () => markdownRender.renderMarkdown())
+const fileIO = useFileIO(toast, () => { markdownRender.renderMarkdown(); renderReady.value = true })
+const findReplace = useFindReplace(editorRef, toast, () => { markdownRender.renderMarkdown(); renderReady.value = true })
 const exportHtml = useExportHtml(previewRenderRef, toast)
+const autoSave = useAutoSave(toast, renderReady)
 
 // 行号
 const lineNumbers = computed(() => {
@@ -188,6 +195,7 @@ function onInput(e: Event) {
   editorStore.setContent(target.value)
   updateCurrentLine()
   markdownRender.renderMarkdown()
+  renderReady.value = true
 }
 
 // 编辑器滚动
@@ -331,6 +339,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  autoSave.dispose()
   markdownRender.terminateWorker()
   document.removeEventListener('dragenter', onGlobalDragEnter)
   document.removeEventListener('dragover', onGlobalDragOver)

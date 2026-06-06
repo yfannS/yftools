@@ -3,6 +3,7 @@ package md2html
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"md2html/internal/model"
@@ -38,6 +39,7 @@ func (r *historyRepository) Save(userID int64, title, markdown, html string, cha
 	existing, err := r.FindRecentByUserIDAndTitle(userID, title)
 	if err == nil && existing != nil {
 		// 5分钟窗口内，更新现有记录
+		log.Printf("[Repo.Save] UPSERT update id=%d, markdown_len=%d", existing.ID, len(markdown))
 		_, err = r.db.Exec(
 			"UPDATE md2html_conversions SET markdown = ?, html = ?, char_count = ?, theme = ?, updated_at = NOW() WHERE id = ?",
 			markdown, sql.NullString{String: html, Valid: html != ""}, charCount, theme, existing.ID,
@@ -61,6 +63,7 @@ func (r *historyRepository) Save(userID int64, title, markdown, html string, cha
 		userID, title, markdown, htmlVal, charCount, theme,
 	)
 	if err != nil {
+		log.Printf("[Repo.Save] INSERT failed: %v", err)
 		return 0, fmt.Errorf("save conversion: %w", err)
 	}
 
@@ -69,6 +72,7 @@ func (r *historyRepository) Save(userID int64, title, markdown, html string, cha
 		return 0, fmt.Errorf("get last insert id: %w", err)
 	}
 
+	log.Printf("[Repo.Save] INSERT success id=%d, markdown_len=%d", id, len(markdown))
 	return id, nil
 }
 

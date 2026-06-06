@@ -2,6 +2,7 @@ package md2html
 
 import (
 	"database/sql"
+	"log"
 	"strconv"
 
 	"md2html/internal/middleware"
@@ -79,6 +80,9 @@ func (h *HistoryHandler) SaveHistory(c *gin.Context) {
 		return
 	}
 
+	log.Printf("[SaveHistory] userID=%d, markdown_len=%d, html_len=%d, theme=%s",
+		userID, len(req.Markdown), len(req.HTML), req.Theme)
+
 	theme := req.Theme
 	if theme == "" {
 		theme = "default"
@@ -86,10 +90,12 @@ func (h *HistoryHandler) SaveHistory(c *gin.Context) {
 
 	id, err := h.historyService.Save(userID, req.Markdown, req.HTML, theme)
 	if err != nil {
+		log.Printf("[SaveHistory] save failed: %v", err)
 		response.InternalError(c, "保存失败")
 		return
 	}
 
+	log.Printf("[SaveHistory] save success, id=%d", id)
 	response.SuccessWithMessage(c, "保存成功", gin.H{"id": id})
 }
 
