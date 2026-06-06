@@ -92,16 +92,18 @@ export function useMarkdownWorker() {
         return
       }
 
-      const md = editorStore.content
-      const isLarge = md.length > CHUNK_RENDER_THRESHOLD
       const startTime = performance.now()
 
       const afterPaint = () => {
-        previewStore.setRenderedContent(d.html, d.html, Math.round(performance.now() - startTime + d.workerMs))
-        localStorage.setItem('m2h_webapp_content', md)
+        const renderMs = Math.round(performance.now() - startTime + d.workerMs)
+        previewStore.setRenderedContent(d.html, d.html, renderMs)
+        // 保存渲染结果到当前 tab
+        const tabId = editorStore.activeTabId
+        if (tabId) {
+          editorStore.setTabRendered(tabId, d.html, d.html, renderMs)
+        }
       }
 
-      // 大文档分块渲染由调用方处理
       afterPaint()
     }
   }

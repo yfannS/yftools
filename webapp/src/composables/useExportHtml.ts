@@ -1,7 +1,7 @@
 import { useEditorStore } from '@/stores/editor'
 import { usePreviewStore } from '@/stores/preview'
 import { useAppStore } from '@/stores/app'
-import type { Ref } from 'vue'
+import { nextTick, type Ref } from 'vue'
 
 type ToastFn = (msg: string, type?: string) => void
 
@@ -301,6 +301,57 @@ ${lbScript}
     }
   }
 
+  function downloadAllHTML() {
+    const tabs = editorStore.tabs
+    if (tabs.length <= 1) {
+      downloadHTML()
+      return
+    }
+
+    const tabsWithContent = tabs.filter(t => t.content.trim())
+    if (tabsWithContent.length === 0) {
+      toast('没有可导出的内容', 'err')
+      return
+    }
+
+    // 逐个下载，间隔 200ms 避免浏览器拦截
+    tabsWithContent.forEach((tab, idx) => {
+      setTimeout(() => {
+        // 临时切换到该 tab 的内容构建 HTML
+        const savedActiveId = editorStore.activeTabId
+        editorStore.switchTab(tab.id)
+
+        // 需要等 tab 切换后构建
+        nextTick(() => {
+          try {
+            const html = buildFullHTML()
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            const name = (tab.filename || 'document').replace(/\.html$/i, '')
+            a.href = url
+            a.download = name + '.html'
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            URL.revokeObjectURL(url)
+          } catch (e) {
+            console.error('[exportHtml] batch download error:', e)
+          }
+
+          // 恢复原来的活跃 tab
+          if (savedActiveId !== tab.id) {
+            editorStore.switchTab(savedActiveId)
+          }
+
+          if (idx === tabsWithContent.length - 1) {
+            toast(`已导出 ${tabsWithContent.length} 个 HTML 文件`)
+          }
+        })
+      }, idx * 200)
+    })
+  }
+
   function copyHTML() {
     try {
       const html = buildFullHTML()
@@ -317,6 +368,7 @@ ${lbScript}
   return {
     buildFullHTML,
     downloadHTML,
+    downloadAllHTML,
     copyHTML
   }
 }

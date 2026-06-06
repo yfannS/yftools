@@ -1,6 +1,7 @@
 <template>
   <div class="md2html-view">
     <ToolbarBar />
+    <TabBar />
     <main class="app-main" ref="mainRef">
       <!-- 编辑器面板 -->
       <section class="app-panel editor-panel">
@@ -20,7 +21,7 @@
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <span>查找</span>
             </button>
-            <button class="panel-action-btn" @click="fileIO.triggerImport()" title="导入 .md 文件">
+            <button class="panel-action-btn" @click="fileIO.triggerImport()" title="导入 .md 文件（支持多选）">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               <span>导入</span>
             </button>
@@ -82,9 +83,13 @@
             <span class="panel-stat" v-if="previewStore.renderTimeMs">{{ previewStore.renderTimeMs }}ms</span>
             <span class="panel-stat">{{ previewStore.htmlSize }}</span>
             <span class="panel-sep"></span>
-            <button class="panel-action-btn primary" @click="exportHtml.downloadHTML()" title="导出 HTML (Ctrl+S)">
+            <button class="panel-action-btn primary" @click="exportHtml.downloadHTML()" title="导出当前 HTML (Ctrl+S)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <span>导出</span>
+            </button>
+            <button class="panel-action-btn" v-if="editorStore.tabs.length > 1" @click="exportHtml.downloadAllHTML()" title="批量导出所有 HTML">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
+              <span>全部导出</span>
             </button>
             <button class="panel-action-btn" @click="exportHtml.copyHTML()" title="复制 HTML (Ctrl+Shift+C)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -121,7 +126,7 @@
     <div class="toast-container" id="toast-container"></div>
 
     <!-- 隐藏文件输入 -->
-    <input type="file" ref="fileIO.fileInputRef.value" style="display:none" accept=".md,.markdown,.txt" @change="fileIO.onFileSelected" />
+    <input type="file" ref="fileIO.fileInputRef.value" style="display:none" accept=".md,.markdown,.txt" multiple @change="fileIO.onFileSelected" />
   </div>
 </template>
 
@@ -140,6 +145,7 @@ import { useToast } from '@/composables/useToast'
 import { useExportHtml } from '@/composables/useExportHtml'
 import { useAutoSave } from '@/composables/useAutoSave'
 import ToolbarBar from '@/components/md2html/ToolbarBar.vue'
+import TabBar from '@/components/md2html/TabBar.vue'
 import OutlinePanel from '@/components/md2html/OutlinePanel.vue'
 
 const editorStore = useEditorStore()
@@ -288,7 +294,6 @@ function loadExample() {
   if (editorStore.content.trim()) {
     if (!confirm('加载示例将覆盖当前内容，继续吗？')) return
   }
-  localStorage.removeItem('m2h_webapp_content')
   editorStore.setContent(EXAMPLE_MD)
   markdownRender.renderMarkdown()
   toast('已加载示例文档')
@@ -312,6 +317,24 @@ function onGlobalKeydown(e: KeyboardEvent) {
   }
 }
 
+// 切换 tab 时重新渲染
+watch(
+  () => editorStore.activeTabId,
+  () => {
+    nextTick(() => {
+      // 恢复该 tab 的渲染结果到 previewStore
+      const tab = editorStore.activeTab
+      if (tab?.renderedHtml) {
+        previewStore.setRenderedContent(tab.rawHtml, tab.renderedHtml, tab.renderTimeMs)
+      } else if (tab?.content.trim()) {
+        markdownRender.renderMarkdown()
+      } else {
+        previewStore.setRenderedContent('', '', 0)
+      }
+    })
+  }
+)
+
 // 初始化
 onMounted(() => {
   appStore.initTheme()
@@ -322,13 +345,11 @@ onMounted(() => {
     panelResize.initRatio(mainRef.value)
   }
 
-  // 恢复保存的内容
-  const saved = localStorage.getItem('m2h_webapp_content')
-  if (saved) {
-    editorStore.setContent(saved)
+  // 初始化 editor store（恢复多 tab 状态）
+  editorStore.init()
+  if (editorStore.content.trim()) {
     markdownRender.renderMarkdown()
   }
-  // 无已保存内容时，保持欢迎页，不自动加载示例
 
   // 全局事件
   document.addEventListener('dragenter', onGlobalDragEnter)
