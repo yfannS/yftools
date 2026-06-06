@@ -204,7 +204,7 @@ async function onRegister() {
 .orb-1 {
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(100, 116, 139, 0.12) 0%, transparent 70%);
   top: -100px;
   left: -100px;
   animation-delay: 0s;
@@ -213,7 +213,7 @@ async function onRegister() {
 .orb-2 {
   width: 350px;
   height: 350px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(100, 116, 139, 0.08) 0%, transparent 70%);
   bottom: -80px;
   right: -80px;
   animation-delay: -4s;
@@ -223,7 +223,7 @@ async function onRegister() {
 .orb-3 {
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(96, 165, 250, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(148, 163, 184, 0.06) 0%, transparent 70%);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -372,7 +372,7 @@ async function onRegister() {
   background: var(--accent);
   border-radius: 1px;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 -1px 8px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 -1px 8px rgba(100, 116, 139, 0.25);
 }
 
 .tab-indicator.register {
@@ -512,7 +512,7 @@ async function onRegister() {
   margin-top: 8px;
   overflow: hidden;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.15);
 }
 
 .submit-btn::before {
@@ -526,7 +526,7 @@ async function onRegister() {
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 16px rgba(100, 116, 139, 0.2);
 }
 
 .submit-btn:hover:not(:disabled)::before {
@@ -535,7 +535,7 @@ async function onRegister() {
 
 .submit-btn:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 1px 4px rgba(100, 116, 139, 0.15);
   transition-duration: 0.1s;
 }
 
@@ -609,24 +609,24 @@ async function onRegister() {
 
 .message.success {
   color: var(--ok);
-  background: rgba(22, 163, 74, 0.06);
-  border: 1px solid rgba(22, 163, 74, 0.12);
+  background: rgba(90, 143, 106, 0.06);
+  border: 1px solid rgba(90, 143, 106, 0.12);
 }
 
 .message.success::before {
   background: var(--ok);
-  box-shadow: 0 0 6px rgba(22, 163, 74, 0.4);
+  box-shadow: 0 0 6px rgba(90, 143, 106, 0.3);
 }
 
 .message.error {
   color: var(--danger);
-  background: rgba(220, 38, 38, 0.06);
-  border: 1px solid rgba(220, 38, 38, 0.12);
+  background: rgba(180, 86, 86, 0.06);
+  border: 1px solid rgba(180, 86, 86, 0.12);
 }
 
 .message.error::before {
   background: var(--danger);
-  box-shadow: 0 0 6px rgba(220, 38, 38, 0.4);
+  box-shadow: 0 0 6px rgba(180, 86, 86, 0.3);
 }
 
 /* ===== 底部 ===== */

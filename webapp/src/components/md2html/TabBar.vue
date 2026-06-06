@@ -91,9 +91,9 @@ function onContextMenu(e: MouseEvent, tabId: string) {
 .tab-bar {
   display: flex;
   align-items: center;
-  background: var(--bg);
+  background: var(--surface-raised);
   border-bottom: 1px solid var(--border);
-  height: 32px;
+  height: 34px;
   flex-shrink: 0;
   user-select: none;
 }
@@ -114,8 +114,8 @@ function onContextMenu(e: MouseEvent, tabId: string) {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 0 12px;
-  height: 32px;
+  padding: 0 14px;
+  height: 34px;
   font-size: 12px;
   color: var(--text-tertiary);
   cursor: pointer;
@@ -123,7 +123,7 @@ function onContextMenu(e: MouseEvent, tabId: string) {
   white-space: nowrap;
   min-width: 0;
   max-width: 160px;
-  transition: background 0.1s, color 0.1s;
+  transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
   position: relative;
 }
 
@@ -136,11 +136,13 @@ function onContextMenu(e: MouseEvent, tabId: string) {
   background: var(--surface);
   color: var(--text);
   border-bottom: 2px solid var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 .tab-icon {
   flex-shrink: 0;
-  opacity: 0.5;
+  opacity: 0.4;
+  transition: opacity 0.15s, color 0.15s;
 }
 
 .tab-item.active .tab-icon {
@@ -160,6 +162,12 @@ function onContextMenu(e: MouseEvent, tabId: string) {
   background: var(--accent);
   flex-shrink: 0;
   opacity: 0.6;
+  animation: tabDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes tabDotPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
 }
 
 .tab-rename-input {
@@ -190,6 +198,7 @@ function onContextMenu(e: MouseEvent, tabId: string) {
   flex-shrink: 0;
   padding: 0;
   margin-left: 2px;
+  transition: background 0.12s, color 0.12s;
 }
 
 .tab-item:hover .tab-close {
@@ -197,26 +206,26 @@ function onContextMenu(e: MouseEvent, tabId: string) {
 }
 
 .tab-close:hover {
-  background: var(--border);
-  color: var(--text);
+  background: var(--danger);
+  color: #fff;
 }
 
 .tab-new {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: none;
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
   flex-shrink: 0;
-  transition: color 0.1s, background 0.1s;
+  transition: color 0.15s var(--ease-out), background 0.15s var(--ease-out);
 }
 
 .tab-new:hover {
-  color: var(--text);
-  background: var(--surface);
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 </style>

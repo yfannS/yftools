@@ -60,15 +60,17 @@
         >
           <div class="item-accent-bar"></div>
           <div class="item-main">
-            <div class="item-title">{{ item.title || '未命名文档' }}</div>
-            <div class="item-meta">
-              <span class="meta-chars">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                {{ item.char_count }} 字
-              </span>
-              <span class="meta-theme" v-if="item.theme && item.theme !== 'default'">{{ item.theme }}</span>
-              <span class="meta-dot"></span>
-              <span class="meta-time">{{ formatTime(item.updated_at || item.created_at) }}</span>
+            <div class="item-row">
+              <div class="item-title">{{ item.title || '未命名文档' }}</div>
+              <div class="item-meta">
+                <span class="meta-chars">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  {{ item.char_count }} 字
+                </span>
+                <span class="meta-theme" v-if="item.theme && item.theme !== 'default'">{{ item.theme }}</span>
+                <span class="meta-dot"></span>
+                <span class="meta-time">{{ formatTime(item.updated_at || item.created_at) }}</span>
+              </div>
             </div>
           </div>
           <button class="delete-btn" @click.stop="onDelete(item.id)" title="删除">
@@ -162,7 +164,7 @@ onMounted(() => {
 /* ===== 页面容器 ===== */
 .history-view {
   padding: 32px 24px;
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto;
   position: relative;
   animation: pageEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -196,7 +198,7 @@ onMounted(() => {
 }
 
 .history-header h2 {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
@@ -353,7 +355,7 @@ onMounted(() => {
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 /* ===== 历史记录卡片 ===== */
@@ -390,7 +392,7 @@ onMounted(() => {
   opacity: 0;
   transition: opacity 0.25s;
   pointer-events: none;
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 20px rgba(100, 116, 139, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .history-item:hover {
@@ -422,20 +424,31 @@ onMounted(() => {
 
 .item-main {
   flex: 1;
-  padding: 14px 16px;
+  padding: 16px 20px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.item-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
   min-width: 0;
 }
 
 .item-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 8px;
   line-height: 1.4;
   transition: color 0.2s;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .history-item:hover .item-title {
@@ -445,10 +458,12 @@ onMounted(() => {
 .item-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-size: 12px;
   color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .meta-chars {
@@ -486,7 +501,7 @@ onMounted(() => {
 
 /* ===== 删除按钮 ===== */
 .delete-btn {
-  width: 44px;
+  width: 48px;
   border: none;
   border-left: 1px solid var(--border);
   background: transparent;
@@ -507,9 +522,9 @@ onMounted(() => {
 }
 
 .delete-btn:hover {
-  background: rgba(220, 38, 38, 0.08);
+  background: rgba(180, 86, 86, 0.08);
   color: var(--danger);
-  border-left-color: rgba(220, 38, 38, 0.15);
+  border-left-color: rgba(180, 86, 86, 0.15);
 }
 
 .delete-btn:active {
@@ -517,7 +532,7 @@ onMounted(() => {
 }
 
 :root[data-theme="dark"] .delete-btn:hover {
-  background: rgba(220, 38, 38, 0.12);
+  background: rgba(180, 86, 86, 0.12);
   color: #f87171;
 }
 
@@ -553,7 +568,7 @@ onMounted(() => {
   color: var(--accent);
   background: var(--accent-soft);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.1);
 }
 
 .page-btn:active:not(:disabled) {

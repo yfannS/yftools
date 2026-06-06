@@ -53,6 +53,9 @@ export const useEditorStore = defineStore('editor', () => {
   const findQuery = ref('')
   const replaceQuery = ref('')
 
+  // 脏标记：用户是否修改过内容（用于自动保存判断）
+  const dirty = ref(false)
+
   // ===== Tab 操作 =====
 
   function createTab(name?: string, markdown?: string): TabItem {
@@ -105,7 +108,10 @@ export const useEditorStore = defineStore('editor', () => {
   function setContent(val: string) {
     const tab = activeTab.value
     if (tab) {
-      tab.content = val
+      if (tab.content !== val) {
+        tab.content = val
+        dirty.value = true
+      }
       saveTabsToStorage()
     }
   }
@@ -182,13 +188,18 @@ export const useEditorStore = defineStore('editor', () => {
     }
   }
 
+  function markSaved() {
+    dirty.value = false
+  }
+
   return {
     tabs, activeTabId, activeTab,
     content, filename, lineCount, wordCount, charCount,
     findBoxOpen, findQuery, replaceQuery,
+    dirty,
     createTab, switchTab, closeTab, closeOtherTabs,
     setContent, setFilename, setTabRendered,
-    updateStats: () => {},
+    markSaved,
     init,
   }
 })

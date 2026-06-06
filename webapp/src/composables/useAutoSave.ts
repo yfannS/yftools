@@ -11,9 +11,10 @@ type ToastFn = (msg: string, type?: string) => void
  * 逻辑：
  * 1. 登录态下，markdown 内容变化后触发保存
  * 2. 3s 防抖，避免频繁保存
- * 3. 保存只传 markdown + theme，不传 html
- * 4. 后端自动提取标题和计算字符数
- * 5. 后端 UPSERT 机制保证 5 分钟内同标题不重复
+ * 3. 仅在 dirty（用户修改过）时才保存
+ * 4. 保存只传 markdown + theme，不传 html
+ * 5. 后端自动提取标题和计算字符数
+ * 6. 后端 UPSERT 机制保证 5 分钟内同标题不重复
  */
 export function useAutoSave(toast: ToastFn, renderReady: Ref<boolean>) {
   const authStore = useAuthStore()
@@ -30,6 +31,7 @@ export function useAutoSave(toast: ToastFn, renderReady: Ref<boolean>) {
   function saveToServer() {
     if (!authStore.isLoggedIn) return
     if (!editorStore.content.trim()) return
+    if (!editorStore.dirty) return
     if (editorStore.content === lastSavedContent.value) return
 
     const now = Date.now()
@@ -41,12 +43,11 @@ export function useAutoSave(toast: ToastFn, renderReady: Ref<boolean>) {
 
     md2htmlApi.saveHistory(editorStore.content, 'default')
       .then(() => {
-        // 静默保存成功，不打扰用户
+        editorStore.markSaved()
       })
       .catch((err) => {
         console.error('Auto-save failed:', err)
-        // 保存失败不弹 toast，避免打扰用户编辑
-        // 重置状态以便下次重试
+        // 保存失败重置状态以便下次重试
         lastSavedContent.value = ''
       })
       .finally(() => {
@@ -92,9 +93,11 @@ export function useAutoSave(toast: ToastFn, renderReady: Ref<boolean>) {
       clearTimeout(saveTimer.value)
       saveTimer.value = null
     }
-    // 退出时如果有未保存的内容，尝试保存一次
-    if (authStore.isLoggedIn && editorStore.content.trim() && editorStore.content !== lastSavedContent.value) {
-      md2htmlApi.saveHistory(editorStore.content, 'default').catch(() => {})
+    // 退出时如果有未保存的修改，尝试保存一次
+    if (authStore.isLoggedIn && editorStore.dirty && editorStore.content.trim()) {
+      md2htmlApi.saveHistory(editorStore.content, 'default').then(() => {
+        editorStore.markSaved()
+      }).catch(() => {})
     }
   }
 

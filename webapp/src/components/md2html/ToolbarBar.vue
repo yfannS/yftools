@@ -24,6 +24,10 @@
           <span class="ext">.html</span>
         </div>
         <span class="toolbar-sep"></span>
+        <router-link v-if="authStore.isLoggedIn" to="/history" class="toolbar-btn" title="历史记录">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span class="btn-label">历史</span>
+        </router-link>
         <button class="toolbar-btn icon-only" @click="appStore.toggleTheme()" :title="appStore.theme === 'light' ? '切换暗色' : '切换亮色'">
           <svg v-if="appStore.theme === 'light'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -34,19 +38,6 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
           <span class="btn-label">登录</span>
         </router-link>
-      </div>
-    </div>
-
-    <!-- 副行：历史记录 -->
-    <div class="header-row sub-row" v-if="authStore.isLoggedIn">
-      <div class="group">
-        <span class="group-label">记录</span>
-        <div class="group-btns">
-          <router-link to="/history" class="toolbar-btn" title="历史记录">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span class="btn-label">历史</span>
-          </router-link>
-        </div>
       </div>
     </div>
   </header>
@@ -88,6 +79,9 @@ function onFilenameInput(e: Event) {
   flex-direction: column;
   flex-shrink: 0;
   user-select: none;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 20;
 }
 
 /* === 主行 === */
@@ -107,24 +101,28 @@ function onFilenameInput(e: Event) {
 }
 
 .app-logo {
-  width: 24px;
-  height: 24px;
-  background: var(--text);
-  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
-  transition: transform 0.12s;
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(100, 116, 139, 0.15);
 }
 
-.app-logo:hover { transform: scale(1.05); }
+.app-logo:hover {
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.2);
+}
 
 .app-logo svg {
   width: 13px;
   height: 13px;
-  stroke: var(--surface);
+  stroke: #fff;
   fill: none;
   stroke-width: 2.5;
   stroke-linecap: round;
@@ -133,8 +131,8 @@ function onFilenameInput(e: Event) {
 
 .app-title {
   font-size: 13.5px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 
@@ -154,13 +152,14 @@ function onFilenameInput(e: Event) {
   padding: 0 10px;
   background: var(--bg);
   font-size: 12px;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), background 0.2s;
   color: var(--text-tertiary);
 }
 
 .filename-field.focused {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+  background: var(--surface);
 }
 
 .filename-field input {
@@ -200,38 +199,6 @@ function onFilenameInput(e: Event) {
   color: var(--text);
 }
 
-/* === 副行 === */
-.sub-row {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 6px 16px 8px;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-  flex-wrap: wrap;
-}
-
-.group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.group-label {
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  user-select: none;
-}
-
-.group-btns {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 /* === 通用按钮 === */
 .toolbar-btn {
   height: 26px;
@@ -246,29 +213,36 @@ function onFilenameInput(e: Event) {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  transition: all 0.12s ease;
+  transition: all 0.15s var(--ease-out);
   white-space: nowrap;
   text-decoration: none;
+  position: relative;
 }
 
 .toolbar-btn:hover {
   border-color: var(--border-strong);
   color: var(--text);
   background: var(--surface-hover);
+  box-shadow: var(--shadow-sm);
 }
 
-.toolbar-btn:active { transform: translateY(0.5px); }
+.toolbar-btn:active {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
 
 .toolbar-btn.primary {
-  background: var(--text);
-  color: var(--surface);
-  border-color: var(--text);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 1px 3px rgba(100, 116, 139, 0.15);
 }
 
 .toolbar-btn.primary:hover {
-  background: var(--text-secondary);
-  border-color: var(--text-secondary);
-  color: var(--surface);
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.2);
+  filter: brightness(1.05);
+  color: #fff;
+  border-color: var(--accent-hover);
 }
 
 .toolbar-btn.icon-only {
@@ -287,6 +261,7 @@ function onFilenameInput(e: Event) {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .toolbar-sep {
@@ -299,7 +274,5 @@ function onFilenameInput(e: Event) {
 @media (max-width: 900px) {
   .btn-label { display: none; }
   .filename-field input { width: 80px; }
-  .group-label { display: none; }
-  .sub-row { gap: 8px; }
 }
 </style>

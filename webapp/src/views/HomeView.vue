@@ -24,6 +24,12 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 60px 24px;
+  animation: homeFadeIn 0.5s var(--ease-out);
+}
+
+@keyframes homeFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .hero {
@@ -33,8 +39,8 @@
 
 .hero h1 {
   font-size: 32px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   color: var(--text);
   margin-bottom: 8px;
 }
@@ -58,12 +64,14 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: all 0.2s var(--ease-out);
+  box-shadow: var(--shadow-sm);
 }
 
 .tool-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+  box-shadow: var(--shadow-md), 0 0 0 3px var(--accent-soft);
+  transform: translateY(-2px);
 }
 
 .tool-icon {
@@ -76,6 +84,11 @@
   border-radius: var(--radius);
   color: var(--accent);
   flex-shrink: 0;
+  transition: transform 0.2s var(--ease-spring);
+}
+
+.tool-card:hover .tool-icon {
+  transform: scale(1.08);
 }
 
 .tool-info h3 {

@@ -1,6 +1,8 @@
 import { useEditorStore } from '@/stores/editor'
 import { usePreviewStore } from '@/stores/preview'
 import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
+import { md2htmlApi } from '@/services/api/md2html'
 import { nextTick, type Ref } from 'vue'
 
 type ToastFn = (msg: string, type?: string) => void
@@ -9,6 +11,7 @@ export function useExportHtml(previewRef: Ref<HTMLElement | undefined>, toast: T
   const editorStore = useEditorStore()
   const previewStore = usePreviewStore()
   const appStore = useAppStore()
+  const authStore = useAuthStore()
 
   function escapeHtml(s: string): string {
     return s
@@ -295,6 +298,13 @@ ${lbScript}
       a.remove()
       URL.revokeObjectURL(url)
       toast('HTML 已导出')
+
+      // 导出时保存到服务器
+      if (authStore.isLoggedIn && editorStore.content.trim()) {
+        md2htmlApi.saveHistory(editorStore.content, 'default').then(() => {
+          editorStore.markSaved()
+        }).catch(() => {})
+      }
     } catch (e) {
       console.error('[exportHtml] downloadHTML error:', e)
       toast('导出失败: ' + (e instanceof Error ? e.message : String(e)), 'err')
