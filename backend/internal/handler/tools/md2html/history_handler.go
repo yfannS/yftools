@@ -2,12 +2,12 @@ package md2html
 
 import (
 	"database/sql"
-	"log"
 	"strconv"
 
 	"md2html/internal/middleware"
 	"md2html/internal/model"
 	md2htmlService "md2html/internal/service/tools/md2html"
+	"md2html/pkg/logger"
 	"md2html/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -37,10 +37,12 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 
 	result, err := h.historyService.ListByUserID(userID, page, pageSize)
 	if err != nil {
+		logger.Error("[GetHistory] failed for userID=%d: %v", userID, err)
 		response.InternalError(c, "获取历史记录失败")
 		return
 	}
 
+	logger.Debug("[GetHistory] userID=%d page=%d total=%d", userID, page, result.Total)
 	response.Success(c, model.HistoryPageResponse{
 		Data:       result.Data,
 		Total:      result.Total,
@@ -63,10 +65,12 @@ func (h *HistoryHandler) GetHistoryDetail(c *gin.Context) {
 
 	detail, err := h.historyService.GetDetail(id, userID)
 	if err != nil {
+		logger.Warn("[GetHistoryDetail] id=%d not found for userID=%d", id, userID)
 		response.NotFound(c, "记录不存在")
 		return
 	}
 
+	logger.Debug("[GetHistoryDetail] id=%d title=%s", id, detail.Title)
 	response.Success(c, detail)
 }
 
@@ -80,7 +84,7 @@ func (h *HistoryHandler) SaveHistory(c *gin.Context) {
 		return
 	}
 
-	log.Printf("[SaveHistory] userID=%d, markdown_len=%d, html_len=%d, theme=%s",
+	logger.Info("[SaveHistory] userID=%d, markdown_len=%d, html_len=%d, theme=%s",
 		userID, len(req.Markdown), len(req.HTML), req.Theme)
 
 	theme := req.Theme
@@ -90,16 +94,16 @@ func (h *HistoryHandler) SaveHistory(c *gin.Context) {
 
 	id, err := h.historyService.Save(userID, req.Markdown, req.HTML, theme)
 	if err != nil {
-		log.Printf("[SaveHistory] save failed: %v", err)
+		logger.Error("[SaveHistory] save failed: %v", err)
 		response.InternalError(c, "保存失败")
 		return
 	}
 
-	log.Printf("[SaveHistory] save success, id=%d", id)
+	logger.Debug("[SaveHistory] save success, id=%d", id)
 	response.SuccessWithMessage(c, "保存成功", gin.H{"id": id})
 }
 
-// DeleteHistory 删除历史记录
+// DeleteHistory 软删除历史记录
 func (h *HistoryHandler) DeleteHistory(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 
@@ -112,12 +116,15 @@ func (h *HistoryHandler) DeleteHistory(c *gin.Context) {
 
 	if err := h.historyService.DeleteByIDAndUserID(id, userID); err != nil {
 		if err == sql.ErrNoRows {
+			logger.Warn("[DeleteHistory] id=%d not found for userID=%d", id, userID)
 			response.NotFound(c, "记录不存在")
 			return
 		}
+		logger.Error("[DeleteHistory] failed for id=%d: %v", id, err)
 		response.InternalError(c, "删除失败")
 		return
 	}
 
+	logger.Info("[DeleteHistory] id=%d soft deleted by userID=%d", id, userID)
 	response.SuccessWithMessage(c, "删除成功", nil)
 }

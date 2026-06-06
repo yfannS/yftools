@@ -3,11 +3,11 @@ package config
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/spf13/viper"
+	"md2html/pkg/logger"
 )
 
 type Config struct {
@@ -17,8 +17,9 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port string `mapstructure:"port"`
-	Mode string `mapstructure:"mode"` // debug / release
+	Port    string `mapstructure:"port"`
+	Mode    string `mapstructure:"mode"` // debug / release
+	LogLevel string `mapstructure:"log_level"` // DEBUG / INFO / WARN / ERROR
 }
 
 type DatabaseConfig struct {
@@ -44,12 +45,12 @@ func Load() *Config {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Failed to read config file: %v", err)
+		logger.Fatal("Failed to read config file: %v", err)
 	}
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
-		log.Fatalf("Failed to unmarshal config: %v", err)
+		logger.Fatal("Failed to unmarshal config: %v", err)
 	}
 
 	return &cfg
@@ -63,11 +64,11 @@ func (c *Config) InitDB() *sql.DB {
 		c.Database.Port,
 		c.Database.Name,
 	)
-	log.Printf("Connecting to database: %s@tcp(%s:%d)/%s", c.Database.User, c.Database.Host, c.Database.Port, c.Database.Name)
+	logger.Info("Connecting to database: %s@tcp(%s:%d)/%s", c.Database.User, c.Database.Host, c.Database.Port, c.Database.Name)
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+		logger.Fatal("Failed to open database: %v", err)
 	}
 
 	db.SetMaxOpenConns(100)
@@ -75,9 +76,9 @@ func (c *Config) InitDB() *sql.DB {
 	db.SetConnMaxLifetime(time.Hour)
 
 	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+		logger.Fatal("Failed to ping database: %v", err)
 	}
 
-	log.Println("Database connected successfully")
+	logger.Info("Database connected successfully")
 	return db
 }

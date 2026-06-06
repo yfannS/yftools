@@ -18,6 +18,7 @@ func SetupRouter(
 
 	// 全局中间件
 	r.Use(middleware.CORS())
+	r.Use(middleware.AccessLog())
 	r.Use(middleware.Recovery())
 
 	// 健康检查

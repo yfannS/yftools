@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"md2html/internal/config"
 	"md2html/internal/handler"
 	md2htmlHandler "md2html/internal/handler/tools/md2html"
@@ -13,12 +11,19 @@ import (
 	md2htmlService "md2html/internal/service/tools/md2html"
 	"md2html/pkg/converter"
 	appJwt "md2html/pkg/jwt"
+	"md2html/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	cfg := config.Load()
+
+	// 初始化日志
+	logger.SetLevel(logger.ParseLevel(cfg.Server.LogLevel))
+	if err := logger.AddFileOutput("logs/app.log"); err != nil {
+		logger.Warn("Failed to add log file output: %v", err)
+	}
 
 	// 初始化 JWT 配置
 	appJwt.SetSecret(cfg.JWT.Secret)
@@ -50,8 +55,8 @@ func main() {
 	// ====== 路由 ======
 	r := router.SetupRouter(authHandler, convertHandler, historyHandler, themeHandler)
 
-	log.Printf("Server starting on :%s", cfg.Server.Port)
+	logger.Info("Server starting on :%s", cfg.Server.Port)
 	if err := r.Run(":" + cfg.Server.Port); err != nil {
-		log.Fatal(err)
+		logger.Fatal("Server failed: %v", err)
 	}
 }
