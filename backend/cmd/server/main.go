@@ -12,6 +12,7 @@ import (
 	"md2html/pkg/converter"
 	appJwt "md2html/pkg/jwt"
 	"md2html/pkg/logger"
+	appRedis "md2html/pkg/redis"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +35,10 @@ func main() {
 	// 初始化数据库
 	db := cfg.InitDB()
 	defer db.Close()
+
+	// 初始化 Redis
+	cfg.InitRedis()
+	defer appRedis.Close()
 
 	// ====== Repository 层 ======
 	userRepo := repository.NewUserRepository(db)

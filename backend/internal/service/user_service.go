@@ -3,10 +3,14 @@ package service
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"md2html/internal/model"
 	"md2html/internal/repository"
 	appJwt "md2html/pkg/jwt"
+	"md2html/pkg/logger"
+	appRedis "md2html/pkg/redis"
+	"md2html/pkg/session"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -15,6 +19,7 @@ type UserService interface {
 	Register(req model.RegisterRequest) error
 	Login(req model.LoginRequest) (string, error)
 	GetProfile(userID int64) (*model.UserProfile, error)
+	Logout(token string) error
 }
 
 type userService struct {
@@ -69,6 +74,20 @@ func (s *userService) Login(req model.LoginRequest) (string, error) {
 		return "", fmt.Errorf("generate token: %w", err)
 	}
 
+	// 将登录会话存入 Redis
+	if appRedis.IsAvailable() {
+		expire, _ := time.ParseDuration(s.jwtExpire)
+		if expire <= 0 {
+			expire = 7 * 24 * time.Hour
+		}
+		if err := session.Set(token, &session.Session{
+			UserID:   user.ID,
+			Username: user.Username,
+		}, expire); err != nil {
+			logger.Warn("[Login] Failed to store session in Redis: %v", err)
+		}
+	}
+
 	return token, nil
 }
 
@@ -86,4 +105,13 @@ func (s *userService) GetProfile(userID int64) (*model.UserProfile, error) {
 		Username:  user.Username,
 		CreatedAt: user.CreatedAt,
 	}, nil
+}
+
+func (s *userService) Logout(token string) error {
+	if appRedis.IsAvailable() {
+		if err := session.Delete(token); err != nil {
+			return fmt.Errorf("delete session: %w", err)
+		}
+	}
+	return nil
 }

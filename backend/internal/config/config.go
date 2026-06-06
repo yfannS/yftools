@@ -8,11 +8,13 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/spf13/viper"
 	"md2html/pkg/logger"
+	appRedis "md2html/pkg/redis"
 )
 
 type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
+	Redis    RedisConfig    `mapstructure:"redis"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
 }
 
@@ -28,6 +30,11 @@ type DatabaseConfig struct {
 	Name     string `mapstructure:"name"`
 	User     string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
+}
+
+type RedisConfig struct {
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
 }
 
 type JWTConfig struct {
@@ -81,4 +88,14 @@ func (c *Config) InitDB() *sql.DB {
 
 	logger.Info("Database connected successfully")
 	return db
+}
+
+// InitRedis 初始化 Redis 连接
+func (c *Config) InitRedis() {
+	if err := appRedis.Init(appRedis.Config{
+		Host: c.Redis.Host,
+		Port: c.Redis.Port,
+	}); err != nil {
+		logger.Warn("Redis connection failed, session will use JWT-only: %v", err)
+	}
 }

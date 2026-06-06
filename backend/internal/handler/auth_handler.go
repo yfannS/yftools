@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strings"
+
 	"md2html/internal/middleware"
 	"md2html/internal/model"
 	"md2html/internal/service"
@@ -68,4 +70,19 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	}
 
 	response.Success(c, profile)
+}
+
+func (h *AuthHandler) Logout(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	tokenString := ""
+	if parts := strings.SplitN(authHeader, " ", 2); len(parts) == 2 {
+		tokenString = parts[1]
+	}
+
+	if err := h.userService.Logout(tokenString); err != nil {
+		logger.Warn("[Logout] failed: %v", err)
+	}
+
+	logger.Info("[Logout] user logged out")
+	response.SuccessWithMessage(c, "登出成功", nil)
 }

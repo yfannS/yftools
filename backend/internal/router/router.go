@@ -30,6 +30,7 @@ func SetupRouter(
 		auth.POST("/register", authHandler.Register)
 		auth.POST("/login", authHandler.Login)
 		auth.GET("/profile", middleware.Auth(), authHandler.GetProfile)
+		auth.POST("/logout", middleware.Auth(), authHandler.Logout)
 	}
 
 	// ====== 工具路由（按工具分组） ======
