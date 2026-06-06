@@ -35,13 +35,40 @@ type UserProfile struct {
 
 // ==================== Conversion ====================
 
+// Conversion 完整记录（内部使用）
 type Conversion struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
-	Markdown  string    `json:"markdown"`
-	HTML      string    `json:"html"`
+	Title     string    `json:"title"`
+	Markdown  string    `json:"markdown,omitempty"`
+	HTML      string    `json:"html,omitempty"`
+	CharCount int       `json:"char_count"`
+	Theme     string    `json:"theme"`
+	IsDelete  int       `json:"is_delete"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// HistoryListItem 历史列表项（不含 markdown/html 大字段）
+type HistoryListItem struct {
+	ID        int64     `json:"id"`
+	Title     string    `json:"title"`
+	CharCount int       `json:"char_count"`
 	Theme     string    `json:"theme"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// HistoryDetail 历史详情（含完整 markdown）
+type HistoryDetail struct {
+	ID        int64     `json:"id"`
+	Title     string    `json:"title"`
+	Markdown  string    `json:"markdown"`
+	HTML      string    `json:"html,omitempty"`
+	CharCount int       `json:"char_count"`
+	Theme     string    `json:"theme"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ConvertRequest struct {
@@ -54,17 +81,20 @@ type ConvertResponse struct {
 	Formatted  string `json:"formatted"`
 }
 
+// SaveHistoryRequest 保存历史请求（html 可选）
 type SaveHistoryRequest struct {
 	Markdown string `json:"markdown" binding:"required"`
-	HTML     string `json:"html" binding:"required"`
+	HTML     string `json:"html"`
 	Theme    string `json:"theme"`
 }
 
+// HistoryPageResponse 历史列表分页响应（轻量）
 type HistoryPageResponse struct {
-	Data  []Conversion `json:"data"`
-	Total int64        `json:"total"`
-	Page  int          `json:"page"`
-	Size  int          `json:"size"`
+	Data       []HistoryListItem `json:"data"`
+	Total      int64             `json:"total"`
+	Page       int               `json:"page"`
+	Size       int               `json:"size"`
+	TotalPages int               `json:"total_pages"`
 }
 
 // ==================== Theme ====================
