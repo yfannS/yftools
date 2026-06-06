@@ -1,9 +1,6 @@
 <template>
   <div class="md2html-view">
-    <ToolbarBar
-      @load-example="loadExample"
-      @import-file="fileIO.triggerImport"
-    />
+    <ToolbarBar />
     <main class="app-main" ref="mainRef">
       <!-- 编辑器面板 -->
       <section class="app-panel editor-panel">
@@ -13,6 +10,20 @@
             <span class="panel-stat">{{ editorStore.lineCount }} 行</span>
             <span class="panel-stat">{{ editorStore.wordCount }} 词</span>
             <span class="panel-stat">{{ editorStore.charCount }} 字符</span>
+          </div>
+          <div class="panel-bar-right">
+            <button class="panel-action-btn" @click="loadExample" title="加载示例">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+              <span>示例</span>
+            </button>
+            <button class="panel-action-btn" :class="{ active: editorStore.findBoxOpen }" @click="editorStore.findBoxOpen = !editorStore.findBoxOpen" title="查找替换 (Ctrl+F)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span>查找</span>
+            </button>
+            <button class="panel-action-btn" @click="fileIO.triggerImport()" title="导入 .md 文件">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>导入</span>
+            </button>
           </div>
         </div>
         <div class="editor-body">
@@ -483,6 +494,12 @@ onUnmounted(() => {
   background: var(--text-secondary);
   border-color: var(--text-secondary);
   color: var(--surface);
+}
+
+.panel-action-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* Editor */
