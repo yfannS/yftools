@@ -25,6 +25,7 @@ Thumbs.db
 
 # ---- Go 后端 ----
 backend/configs/config.yaml
+backend/bin/
 backend/tmp/
 backend/md2html-server
 backend/md2html

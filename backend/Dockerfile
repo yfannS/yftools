@@ -7,7 +7,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/server ./cmd/serv
 
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
 COPY --from=builder /app/server /app/server
-COPY --from=builder /app/migrations /app/migrations
 EXPOSE 8000
 CMD ["/app/server"]

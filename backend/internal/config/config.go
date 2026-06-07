@@ -64,7 +64,7 @@ func Load() *Config {
 }
 
 func (c *Config) InitDB() *sql.DB {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=true&loc=Local&tls=false",
 		c.Database.User,
 		c.Database.Password,
 		c.Database.Host,
