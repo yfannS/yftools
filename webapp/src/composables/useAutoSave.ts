@@ -38,6 +38,7 @@ export function useAutoSave(toast: ToastFn, renderReady: Ref<boolean>) {
     if (now - lastSaveTime.value < MIN_INTERVAL) return
 
     isSaving.value = true
+    editorStore.markSaving()
     lastSavedContent.value = editorStore.content
     lastSaveTime.value = now
 
@@ -49,6 +50,7 @@ export function useAutoSave(toast: ToastFn, renderReady: Ref<boolean>) {
         console.error('Auto-save failed:', err)
         // 保存失败重置状态以便下次重试
         lastSavedContent.value = ''
+        editorStore.markSaveError()
       })
       .finally(() => {
         isSaving.value = false
@@ -65,6 +67,16 @@ export function useAutoSave(toast: ToastFn, renderReady: Ref<boolean>) {
     saveTimer.value = setTimeout(() => {
       saveToServer()
     }, SAVE_DEBOUNCE)
+  }
+
+  function retrySave() {
+    if (saveTimer.value) {
+      clearTimeout(saveTimer.value)
+      saveTimer.value = null
+    }
+    lastSavedContent.value = ''
+    lastSaveTime.value = 0
+    saveToServer()
   }
 
   // 监听内容变化
@@ -97,9 +109,11 @@ export function useAutoSave(toast: ToastFn, renderReady: Ref<boolean>) {
     if (authStore.isLoggedIn && editorStore.dirty && editorStore.content.trim()) {
       md2htmlApi.saveHistory(editorStore.content, 'default').then(() => {
         editorStore.markSaved()
-      }).catch(() => {})
+      }).catch(() => {
+        editorStore.markSaveError()
+      })
     }
   }
 
-  return { isSaving, scheduleSave, dispose }
+  return { isSaving, scheduleSave, retrySave, dispose }
 }

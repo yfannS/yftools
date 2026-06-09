@@ -1,7 +1,8 @@
 version: '3.8'
 services:
-  backend:
+  yftools-md2html-backend:
     build: ./backend
+    container_name: yftools-md2html-backend
     ports:
       - "8000:8000"
     volumes:
@@ -10,10 +11,11 @@ services:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
-  frontend:
+  yftools-md2html-frontend:
     build: ./webapp
+    container_name: yftools-md2html-frontend
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      - yftools-md2html-backend
     restart: unless-stopped

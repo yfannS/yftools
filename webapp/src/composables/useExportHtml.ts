@@ -301,9 +301,12 @@ ${lbScript}
 
       // 导出时保存到服务器
       if (authStore.isLoggedIn && editorStore.content.trim()) {
+        editorStore.markSaving()
         md2htmlApi.saveHistory(editorStore.content, 'default').then(() => {
           editorStore.markSaved()
-        }).catch(() => {})
+        }).catch(() => {
+          editorStore.markSaveError()
+        })
       }
     } catch (e) {
       console.error('[exportHtml] downloadHTML error:', e)
@@ -375,10 +378,46 @@ ${lbScript}
     }
   }
 
+  function copyRawHTML() {
+    try {
+      const html = previewStore.rawHtml || ''
+      if (!html.trim()) {
+        toast('没有可复制的 HTML', 'err')
+        return
+      }
+      navigator.clipboard.writeText(html).then(() => toast('纯 HTML 已复制')).catch((e) => {
+        console.error('[exportHtml] copyRawHTML error:', e)
+        toast('复制失败: ' + String(e), 'err')
+      })
+    } catch (e) {
+      console.error('[exportHtml] copyRawHTML error:', e)
+      toast('复制失败: ' + (e instanceof Error ? e.message : String(e)), 'err')
+    }
+  }
+
+  function openPreviewWindow() {
+    try {
+      const html = buildFullHTML()
+      const win = window.open('', '_blank')
+      if (!win) {
+        toast('新窗口被浏览器拦截', 'err')
+        return
+      }
+      win.document.open()
+      win.document.write(html)
+      win.document.close()
+    } catch (e) {
+      console.error('[exportHtml] openPreviewWindow error:', e)
+      toast('打开预览失败: ' + (e instanceof Error ? e.message : String(e)), 'err')
+    }
+  }
+
   return {
     buildFullHTML,
     downloadHTML,
     downloadAllHTML,
-    copyHTML
+    copyHTML,
+    copyRawHTML,
+    openPreviewWindow,
   }
 }

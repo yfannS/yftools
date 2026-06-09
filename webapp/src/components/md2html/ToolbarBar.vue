@@ -23,6 +23,15 @@
           >
           <span class="ext">.html</span>
         </div>
+        <button
+          class="save-status"
+          :class="editorStore.saveStatus"
+          :title="saveStatusTitle"
+          @click="emit('retry-save')"
+        >
+          <span class="status-dot"></span>
+          <span>{{ saveStatusText }}</span>
+        </button>
         <span class="toolbar-sep"></span>
         <router-link v-if="authStore.isLoggedIn" to="/history" class="toolbar-btn" title="历史记录">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -44,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useEditorStore } from '@/stores/editor'
 import { useAuthStore } from '@/stores/auth'
@@ -63,7 +72,22 @@ function onLogout() {
 }
 
 const emit = defineEmits<{
+  'retry-save': []
 }>()
+
+const saveStatusText = computed(() => {
+  if (!authStore.isLoggedIn) return '仅本地'
+  if (editorStore.saveStatus === 'saving') return '保存中'
+  if (editorStore.saveStatus === 'saved') return '已云端保存'
+  if (editorStore.saveStatus === 'error') return '保存失败'
+  return '本地已保存'
+})
+
+const saveStatusTitle = computed(() => {
+  if (!authStore.isLoggedIn) return '未登录，当前内容仅保存到本地浏览器'
+  if (editorStore.saveStatus === 'error') return '自动保存失败，点击后等待下次内容变更或导出时重试'
+  return saveStatusText.value
+})
 
 function onFilenameInput(e: Event) {
   const val = (e.target as HTMLInputElement).value
@@ -188,6 +212,48 @@ function onFilenameInput(e: Event) {
   padding: 0 4px;
 }
 
+.save-status {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-family: var(--font-sans);
+  cursor: default;
+  white-space: nowrap;
+}
+
+.save-status.error {
+  cursor: pointer;
+  color: var(--danger);
+  background: rgba(180, 86, 86, 0.08);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.save-status.saved .status-dot { background: var(--ok); }
+.save-status.saving .status-dot {
+  background: var(--accent);
+  animation: savePulse 1s ease-in-out infinite;
+}
+.save-status.error .status-dot { background: var(--danger); }
+.save-status.local .status-dot { background: var(--text-tertiary); }
+
+@keyframes savePulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
 .toolbar-btn.ghost {
   background: transparent;
   border-color: var(--border);
@@ -274,5 +340,7 @@ function onFilenameInput(e: Event) {
 @media (max-width: 900px) {
   .btn-label { display: none; }
   .filename-field input { width: 80px; }
+  .save-status span:not(.status-dot) { display: none; }
+  .save-status { padding: 0 4px; }
 }
 </style>

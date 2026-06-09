@@ -1,6 +1,6 @@
 <template>
   <div class="md2html-view">
-    <ToolbarBar />
+    <ToolbarBar @retry-save="autoSave.retrySave()" />
     <TabBar />
     <main class="app-main" ref="mainRef">
       <!-- 编辑器面板 -->
@@ -45,16 +45,35 @@
             ></textarea>
             <!-- 查找替换 -->
             <div class="find-box" v-if="editorStore.findBoxOpen">
+              <div class="find-header">
+                <span>查找替换</span>
+                <span class="find-count" :class="{ empty: editorStore.findQuery && editorStore.findTotal === 0 }">
+                  {{ editorStore.findQuery ? `${editorStore.findActiveIndex || 0} / ${editorStore.findTotal}` : '0 / 0' }}
+                </span>
+              </div>
               <div class="find-row">
-                <input id="findInput" v-model="editorStore.findQuery" placeholder="查找内容" @keydown.enter="findReplace.findNext()">
-                <button class="toolbar-btn" @click="findReplace.findNext()">下一个</button>
+                <input id="findInput" v-model="editorStore.findQuery" placeholder="查找内容" @keydown.enter.shift.prevent="findReplace.findPrev()" @keydown.enter.prevent="findReplace.findNext()">
+                <button class="toolbar-btn icon-btn" @click="findReplace.findPrev()" title="上一个">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+                </button>
+                <button class="toolbar-btn icon-btn" @click="findReplace.findNext()" title="下一个">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
               </div>
               <div class="find-row">
                 <input id="replaceInput" v-model="editorStore.replaceQuery" placeholder="替换为">
                 <button class="toolbar-btn" @click="findReplace.replaceOne()">替换</button>
                 <button class="toolbar-btn" @click="findReplace.replaceAll()">全部</button>
               </div>
-              <div class="find-row" style="justify-content:flex-end">
+              <div class="find-options">
+                <label class="find-option">
+                  <input type="checkbox" v-model="editorStore.findCaseSensitive">
+                  <span>Aa</span>
+                </label>
+                <label class="find-option">
+                  <input type="checkbox" v-model="editorStore.findWholeWord">
+                  <span>全词</span>
+                </label>
                 <button class="toolbar-btn" @click="editorStore.findBoxOpen = false">关闭</button>
               </div>
             </div>
@@ -82,7 +101,21 @@
             </div>
             <span class="panel-stat" v-if="previewStore.renderTimeMs">{{ previewStore.renderTimeMs }}ms</span>
             <span class="panel-stat">{{ previewStore.htmlSize }}</span>
+            <select
+              class="scale-select"
+              :value="previewStore.previewScale"
+              title="预览缩放"
+              @change="previewStore.setPreviewScale(Number(($event.target as HTMLSelectElement).value))"
+            >
+              <option :value="0.9">90%</option>
+              <option :value="1">100%</option>
+              <option :value="1.2">120%</option>
+            </select>
             <span class="panel-sep"></span>
+            <button class="panel-action-btn" @click="exportHtml.openPreviewWindow()" title="在新窗口打开完整 HTML 预览">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              <span>新窗口</span>
+            </button>
             <button class="panel-action-btn primary" @click="exportHtml.downloadHTML()" title="导出当前 HTML (Ctrl+S)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               <span>导出</span>
@@ -91,16 +124,24 @@
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
               <span>全部导出</span>
             </button>
-            <button class="panel-action-btn" @click="exportHtml.copyHTML()" title="复制 HTML (Ctrl+Shift+C)">
+            <button class="panel-action-btn" @click="exportHtml.copyRawHTML()" title="复制转换后的纯 HTML 片段">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span>纯 HTML</span>
+            </button>
+            <button class="panel-action-btn" @click="exportHtml.copyHTML()" title="复制完整 HTML 文档 (Ctrl+Shift+C)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              <span>复制</span>
+              <span>完整 HTML</span>
             </button>
             <OutlinePanel />
           </div>
         </div>
         <div class="preview-body">
           <div class="preview-pane" :class="{ active: previewStore.viewMode === 'preview' }" ref="previewPaneRef" @scroll="scrollSync.syncPreviewToEditor">
-            <div id="previewRender" ref="previewRenderRef">
+            <div
+              id="previewRender"
+              ref="previewRenderRef"
+              :style="{ '--preview-scale': previewStore.previewScale }"
+            >
               <div class="empty-state" v-if="!previewStore.renderedHtml">
                 <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
                 <h3>欢迎使用 Markdown 编辑器</h3>
@@ -114,7 +155,10 @@
               <div v-else class="markdown-preview" v-html="previewStore.renderedHtml"></div>
             </div>
           </div>
-          <pre class="preview-pane" :class="{ active: previewStore.viewMode === 'source' }" id="sourcePane">{{ previewStore.rawHtml }}</pre>
+          <div class="preview-pane source-view" :class="{ active: previewStore.viewMode === 'source' }">
+            <div class="source-gutter"><pre>{{ sourceLineNumbers }}</pre></div>
+            <pre id="sourcePane">{{ previewStore.rawHtml }}</pre>
+          </div>
         </div>
       </section>
     </main>
@@ -186,6 +230,11 @@ const currentLineStyle = computed(() => ({
   transform: `translateY(${currentLineTop.value}px)`
 }))
 
+const sourceLineNumbers = computed(() => {
+  const count = Math.max(1, previewStore.rawHtml ? previewStore.rawHtml.split('\n').length : 1)
+  return Array.from({ length: count }, (_, i) => i + 1).join('\n')
+})
+
 function updateCurrentLine() {
   if (!editorRef.value) return
   const textarea = editorRef.value
@@ -221,6 +270,7 @@ function onEditorKeydown(e: KeyboardEvent) {
     } else if (e.key.toLowerCase() === 'f') {
       e.preventDefault()
       editorStore.findBoxOpen = !editorStore.findBoxOpen
+      if (editorStore.findBoxOpen) focusFindInput()
     } else if (e.shiftKey && e.key.toLowerCase() === 'c') {
       e.preventDefault()
       exportHtml.copyHTML()
@@ -315,7 +365,25 @@ function onGlobalKeydown(e: KeyboardEvent) {
     e.preventDefault()
     exportHtml.copyHTML()
   }
+  if (e.key === 'Escape' && editorStore.findBoxOpen) {
+    editorStore.findBoxOpen = false
+    editorRef.value?.focus()
+  }
 }
+
+function focusFindInput() {
+  nextTick(() => {
+    document.getElementById('findInput')?.focus()
+    findReplace.refreshMatches()
+  })
+}
+
+watch(
+  () => editorStore.findBoxOpen,
+  (open) => {
+    if (open) focusFindInput()
+  }
+)
 
 // 切换 tab 时重新渲染
 watch(
@@ -488,6 +556,23 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+.scale-select {
+  height: 24px;
+  min-width: 62px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-family: var(--font-sans);
+  outline: none;
+}
+
+.scale-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
 .panel-sep {
   width: 1px;
   height: 16px;
@@ -628,6 +713,24 @@ onUnmounted(() => {
   animation: findBoxIn 0.15s var(--ease-out);
 }
 
+.find-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.find-count {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.find-count.empty {
+  color: var(--danger);
+}
+
 @keyframes findBoxIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -648,6 +751,38 @@ onUnmounted(() => {
 }
 .find-row input:focus { border-color: var(--accent); }
 .find-row .toolbar-btn { height: 26px; padding: 0 8px; font-size: 11px; }
+
+.find-options {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.find-options .toolbar-btn {
+  margin-left: auto;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.find-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.find-option input {
+  accent-color: var(--accent);
+}
+
+.icon-btn {
+  width: 28px;
+  justify-content: center;
+}
 
 /* Preview */
 .preview-body {
@@ -674,6 +809,31 @@ onUnmounted(() => {
   font-size: 15px;
   line-height: 1.75;
   color: var(--text);
+  transform: scale(var(--preview-scale, 1));
+  transform-origin: top center;
+  width: calc(100% / var(--preview-scale, 1));
+}
+
+.source-view {
+  display: none;
+  grid-template-columns: 52px 1fr;
+}
+
+.source-view.active {
+  display: grid;
+}
+
+.source-gutter {
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  background: var(--editor-bg);
+  color: var(--line-number);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  text-align: right;
+  padding: 16px 10px 16px 0;
+  user-select: none;
 }
 
 #sourcePane {
@@ -685,6 +845,7 @@ onUnmounted(() => {
   white-space: pre-wrap;
   word-break: break-word;
   background: var(--preview-bg);
+  overflow: auto;
 }
 
 /* Markdown preview styles */

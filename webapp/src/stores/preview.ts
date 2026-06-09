@@ -14,6 +14,7 @@ export const usePreviewStore = defineStore('preview', () => {
   const renderTimeMs = ref(0)
   const htmlSize = ref('0 B')
   const outline = ref<OutlineItem[]>([])
+  const previewScale = ref(1)
 
   function setRenderedContent(raw: string, rendered: string, timeMs: number) {
     rawHtml.value = raw
@@ -30,7 +31,14 @@ export const usePreviewStore = defineStore('preview', () => {
     viewMode.value = mode
   }
 
-  return { renderedHtml, rawHtml, viewMode, renderTimeMs, htmlSize, outline, setRenderedContent, setOutline, setViewMode }
+  function setPreviewScale(scale: number) {
+    previewScale.value = Math.min(1.25, Math.max(0.85, scale))
+  }
+
+  return {
+    renderedHtml, rawHtml, viewMode, renderTimeMs, htmlSize, outline, previewScale,
+    setRenderedContent, setOutline, setViewMode, setPreviewScale,
+  }
 })
 
 function formatBytes(bytes: number): string {

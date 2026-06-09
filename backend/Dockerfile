@@ -1,13 +1,7 @@
-FROM golang:1.22-alpine AS builder
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/server ./cmd/server
-
+# 本地已编译好二进制，直接复制到最小运行时镜像
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
-COPY --from=builder /app/server /app/server
+COPY bin/yftools-server /app/server
 EXPOSE 8000
 CMD ["/app/server"]

@@ -11,6 +11,8 @@ export interface TabItem {
   htmlSize: string
 }
 
+export type SaveStatus = 'local' | 'saving' | 'saved' | 'error'
+
 let tabIdCounter = 0
 
 function generateTabId(): string {
@@ -52,9 +54,14 @@ export const useEditorStore = defineStore('editor', () => {
   const findBoxOpen = ref(false)
   const findQuery = ref('')
   const replaceQuery = ref('')
+  const findCaseSensitive = ref(false)
+  const findWholeWord = ref(false)
+  const findActiveIndex = ref(0)
+  const findTotal = ref(0)
 
   // 脏标记：用户是否修改过内容（用于自动保存判断）
   const dirty = ref(false)
+  const saveStatus = ref<SaveStatus>('local')
 
   // ===== Tab 操作 =====
 
@@ -111,6 +118,7 @@ export const useEditorStore = defineStore('editor', () => {
       if (tab.content !== val) {
         tab.content = val
         dirty.value = true
+        saveStatus.value = 'local'
       }
       saveTabsToStorage()
     }
@@ -190,16 +198,31 @@ export const useEditorStore = defineStore('editor', () => {
 
   function markSaved() {
     dirty.value = false
+    saveStatus.value = 'saved'
+  }
+
+  function markSaving() {
+    saveStatus.value = 'saving'
+  }
+
+  function markSaveError() {
+    saveStatus.value = 'error'
+  }
+
+  function setFindStats(activeIndex: number, total: number) {
+    findActiveIndex.value = activeIndex
+    findTotal.value = total
   }
 
   return {
     tabs, activeTabId, activeTab,
     content, filename, lineCount, wordCount, charCount,
     findBoxOpen, findQuery, replaceQuery,
-    dirty,
+    findCaseSensitive, findWholeWord, findActiveIndex, findTotal,
+    dirty, saveStatus,
     createTab, switchTab, closeTab, closeOtherTabs,
     setContent, setFilename, setTabRendered,
-    markSaved,
+    markSaved, markSaving, markSaveError, setFindStats,
     init,
   }
 })

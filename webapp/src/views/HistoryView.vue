@@ -7,6 +7,15 @@
           {{ historyStore.items.length }} 条记录
         </span>
       </div>
+      <select
+        v-if="authStore.isLoggedIn && historyStore.items.length > 0"
+        v-model="sortOrder"
+        class="sort-select"
+        title="按更新时间排序"
+      >
+        <option value="desc">更新时间：最新优先</option>
+        <option value="asc">更新时间：最早优先</option>
+      </select>
       <router-link to="/md2html" class="back-link">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         <span>返回编辑器</span>
@@ -52,7 +61,7 @@
     <div v-if="authStore.isLoggedIn && !historyStore.loading && historyStore.items.length" class="history-list-wrapper">
       <TransitionGroup name="list-stagger" tag="div" class="history-list" appear>
         <div
-          v-for="(item, index) in historyStore.items"
+          v-for="(item, index) in sortedItems"
           :key="item.id"
           class="history-item"
           :style="{ '--stagger-index': index }"
@@ -107,11 +116,25 @@
         </div>
       </div>
     </Transition>
+
+    <Transition name="overlay">
+      <div class="detail-loading-overlay" v-if="pendingItem">
+        <div class="open-dialog">
+          <h3>打开历史记录</h3>
+          <p>当前编辑器已有内容，要覆盖当前标签，还是新建标签打开？</p>
+          <div class="dialog-actions">
+            <button class="dialog-btn ghost" @click="pendingItem = null">取消</button>
+            <button class="dialog-btn" @click="loadHistoryItem(pendingItem, 'replace')">覆盖当前</button>
+            <button class="dialog-btn primary" @click="loadHistoryItem(pendingItem, 'new')">新建标签</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useHistoryStore, type HistoryListItem } from '@/stores/history'
@@ -121,8 +144,17 @@ const authStore = useAuthStore()
 const historyStore = useHistoryStore()
 const editorStore = useEditorStore()
 const router = useRouter()
+const sortOrder = ref<'desc' | 'asc'>('desc')
+const pendingItem = ref<HistoryListItem | null>(null)
 
 const totalPages = computed(() => Math.ceil(historyStore.total / historyStore.pageSize))
+const sortedItems = computed(() => {
+  return [...historyStore.items].sort((a, b) => {
+    const aTime = new Date(a.updated_at || a.created_at).getTime()
+    const bTime = new Date(b.updated_at || b.created_at).getTime()
+    return sortOrder.value === 'desc' ? bTime - aTime : aTime - bTime
+  })
+})
 
 function formatTime(t: string) {
   if (!t) return ''
@@ -141,9 +173,24 @@ function formatTime(t: string) {
 }
 
 async function onItemClick(item: HistoryListItem) {
+  if (editorStore.content.trim()) {
+    pendingItem.value = item
+    return
+  }
+  await loadHistoryItem(item, 'replace')
+}
+
+async function loadHistoryItem(item: HistoryListItem, mode: 'replace' | 'new') {
+  pendingItem.value = null
   const detail = await historyStore.getDetail(item.id)
   if (detail) {
-    editorStore.setContent(detail.markdown)
+    const title = detail.title || item.title || '未命名文档'
+    if (mode === 'new') {
+      editorStore.createTab(title, detail.markdown)
+    } else {
+      editorStore.setFilename(title)
+      editorStore.setContent(detail.markdown)
+    }
     router.push('/md2html')
   }
 }
@@ -189,6 +236,7 @@ onMounted(() => {
   margin-bottom: 28px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
+  gap: 12px;
 }
 
 .header-left {
@@ -208,6 +256,24 @@ onMounted(() => {
   font-size: 13px;
   color: var(--text-tertiary);
   font-weight: 400;
+}
+
+.sort-select {
+  height: 32px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  outline: none;
+  margin-left: auto;
+}
+
+.sort-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .back-link {
@@ -620,6 +686,64 @@ onMounted(() => {
 
 .overlay-content .spinner-ring {
   margin-bottom: 0;
+}
+
+.open-dialog {
+  width: min(420px, calc(100vw - 40px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+  color: var(--text);
+}
+
+.open-dialog h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.open-dialog p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dialog-btn {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  transition: all 0.15s var(--ease-out);
+}
+
+.dialog-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.dialog-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.dialog-btn.ghost {
+  background: transparent;
 }
 
 /* ===== Vue Transition 动画 ===== */
