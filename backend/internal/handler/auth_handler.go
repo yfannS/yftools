@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"strings"
 
 	"md2html/internal/middleware"
@@ -23,37 +24,91 @@ func NewAuthHandler(userService service.UserService) *AuthHandler {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req model.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		logger.Warn("[Register] bad request: %v", err)
-		response.BadRequest(c, "参数错误: "+err.Error())
+		logger.WarnKV("[Register] bad request", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"client_ip":  c.ClientIP(),
+			"error":      err,
+		})
+		response.BadRequestCode(c, response.CodeInvalidParams, "参数错误: "+err.Error())
 		return
 	}
 
 	if err := h.userService.Register(req); err != nil {
-		logger.Warn("[Register] failed: %v", err)
-		response.BadRequest(c, err.Error())
+		if errors.Is(err, service.ErrUsernameExists) {
+			logger.WarnKV("[Register] username exists", logger.Fields{
+				"request_id": middleware.GetRequestID(c),
+				"client_ip":  c.ClientIP(),
+				"username":   req.Username,
+			})
+			response.BadRequestCode(c, response.CodeUsernameExists, err.Error())
+			return
+		}
+
+		logger.ErrorKV("[Register] failed", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"client_ip":  c.ClientIP(),
+			"username":   req.Username,
+			"error":      err,
+		})
+		response.InternalError(c, "注册失败")
 		return
 	}
 
-	logger.Info("[Register] user=%s registered", req.Username)
+	logger.InfoKV("[Register] success", logger.Fields{
+		"request_id": middleware.GetRequestID(c),
+		"client_ip":  c.ClientIP(),
+		"username":   req.Username,
+	})
 	response.SuccessWithMessage(c, "注册成功", nil)
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req model.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		logger.Warn("[Login] bad request: %v", err)
-		response.BadRequest(c, "参数错误: "+err.Error())
+		logger.WarnKV("[Login] bad request", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"client_ip":  c.ClientIP(),
+			"error":      err,
+		})
+		response.BadRequestCode(c, response.CodeInvalidParams, "参数错误: "+err.Error())
 		return
 	}
 
-	token, err := h.userService.Login(req)
+	token, err := h.userService.Login(req, c.ClientIP())
 	if err != nil {
-		logger.Warn("[Login] failed for user=%s: %v", req.Username, err)
-		response.Unauthorized(c, err.Error())
+		if errors.Is(err, service.ErrTooManyRequests) {
+			logger.WarnKV("[Login] rate limited", logger.Fields{
+				"request_id": middleware.GetRequestID(c),
+				"client_ip":  c.ClientIP(),
+				"username":   req.Username,
+			})
+			response.TooManyRequestsCode(c, response.CodeRateLimited, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrInvalidCredentials) {
+			logger.WarnKV("[Login] invalid credentials", logger.Fields{
+				"request_id": middleware.GetRequestID(c),
+				"client_ip":  c.ClientIP(),
+				"username":   req.Username,
+			})
+			response.UnauthorizedCode(c, response.CodeInvalidCredentials, err.Error())
+			return
+		}
+		logger.ErrorKV("[Login] failed", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"client_ip":  c.ClientIP(),
+			"username":   req.Username,
+			"error":      err,
+		})
+		response.InternalError(c, "登录失败")
 		return
 	}
 
-	logger.Info("[Login] user=%s logged in", req.Username)
+	logger.InfoKV("[Login] success", logger.Fields{
+		"request_id": middleware.GetRequestID(c),
+		"client_ip":  c.ClientIP(),
+		"username":   req.Username,
+	})
 	response.Success(c, model.LoginResponse{
 		Token:    token,
 		Username: req.Username,
@@ -64,8 +119,12 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	profile, err := h.userService.GetProfile(userID)
 	if err != nil {
-		logger.Warn("[GetProfile] failed for userID=%d: %v", userID, err)
-		response.NotFound(c, err.Error())
+		logger.WarnKV("[GetProfile] user not found", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"user_id":    userID,
+			"error":      err,
+		})
+		response.NotFoundCode(c, response.CodeUserNotFound, err.Error())
 		return
 	}
 
@@ -80,9 +139,14 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	}
 
 	if err := h.userService.Logout(tokenString); err != nil {
-		logger.Warn("[Logout] failed: %v", err)
+		logger.WarnKV("[Logout] failed", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"error":      err,
+		})
 	}
 
-	logger.Info("[Logout] user logged out")
+	logger.InfoKV("[Logout] success", logger.Fields{
+		"request_id": middleware.GetRequestID(c),
+	})
 	response.SuccessWithMessage(c, "登出成功", nil)
 }

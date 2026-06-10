@@ -20,3 +20,30 @@ redis:
 jwt:
   secret: change-me-in-production
   expire: 168h
+
+rate_limit:
+  enabled: true
+  prefix: md2html:auth:ratelimit
+  register:
+    ip_per_minute:
+      limit: 5
+      window: 1m
+    ip_per_hour:
+      limit: 20
+      window: 1h
+    username_per_hour:
+      limit: 3
+      window: 1h
+  login:
+    ip_per_minute:
+      limit: 20
+      window: 1m
+    username_per_15m:
+      limit: 10
+      window: 15m
+    fail_username_per_15m:
+      limit: 5
+      window: 15m
+    fail_username_ip_per_5m:
+      limit: 3
+      window: 5m

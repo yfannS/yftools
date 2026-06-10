@@ -12,15 +12,16 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	Redis    RedisConfig    `mapstructure:"redis"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
+	Server    ServerConfig    `mapstructure:"server"`
+	Database  DatabaseConfig  `mapstructure:"database"`
+	Redis     RedisConfig     `mapstructure:"redis"`
+	JWT       JWTConfig       `mapstructure:"jwt"`
+	RateLimit RateLimitConfig `mapstructure:"rate_limit"`
 }
 
 type ServerConfig struct {
-	Port    string `mapstructure:"port"`
-	Mode    string `mapstructure:"mode"` // debug / release
+	Port     string `mapstructure:"port"`
+	Mode     string `mapstructure:"mode"`      // debug / release
 	LogLevel string `mapstructure:"log_level"` // DEBUG / INFO / WARN / ERROR
 }
 
@@ -40,6 +41,55 @@ type RedisConfig struct {
 type JWTConfig struct {
 	Secret string `mapstructure:"secret"`
 	Expire string `mapstructure:"expire"` // e.g. "168h" = 7 days
+}
+
+type RateLimitConfig struct {
+	Enabled  bool                    `mapstructure:"enabled"`
+	Prefix   string                  `mapstructure:"prefix"`
+	Register RegisterRateLimitConfig `mapstructure:"register"`
+	Login    LoginRateLimitConfig    `mapstructure:"login"`
+}
+
+type RegisterRateLimitConfig struct {
+	IPPerMinute     LimitRuleConfig `mapstructure:"ip_per_minute"`
+	IPPerHour       LimitRuleConfig `mapstructure:"ip_per_hour"`
+	UsernamePerHour LimitRuleConfig `mapstructure:"username_per_hour"`
+}
+
+type LoginRateLimitConfig struct {
+	IPPerMinute         LimitRuleConfig `mapstructure:"ip_per_minute"`
+	UsernamePer15m      LimitRuleConfig `mapstructure:"username_per_15m"`
+	FailUsernamePer15m  LimitRuleConfig `mapstructure:"fail_username_per_15m"`
+	FailUsernameIPPer5m LimitRuleConfig `mapstructure:"fail_username_ip_per_5m"`
+}
+
+type LimitRuleConfig struct {
+	Limit  int    `mapstructure:"limit"`
+	Window string `mapstructure:"window"`
+}
+
+func (c RateLimitConfig) KeyPrefix() string {
+	if c.Prefix == "" {
+		return "md2html:auth:ratelimit"
+	}
+	return c.Prefix
+}
+
+func (c LimitRuleConfig) Duration() time.Duration {
+	if c.Window == "" {
+		return 0
+	}
+
+	window, err := time.ParseDuration(c.Window)
+	if err != nil || window <= 0 {
+		return 0
+	}
+
+	return window
+}
+
+func (c LimitRuleConfig) IsEnabled() bool {
+	return c.Limit > 0 && c.Duration() > 0
 }
 
 func Load() *Config {

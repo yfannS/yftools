@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -37,6 +39,8 @@ type Logger struct {
 	logger  *log.Logger
 	outputs []io.Writer
 }
+
+type Fields map[string]interface{}
 
 var (
 	defaultLogger *Logger
@@ -159,6 +163,69 @@ func (l *Logger) log(level Level, format string, args ...interface{}) {
 	}
 }
 
+func (l *Logger) logFields(level Level, message string, fields Fields) {
+	if level < l.level {
+		return
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	now := time.Now().Format("2006-01-02 15:04:05.000")
+	prefix := l.prefix
+	if prefix != "" {
+		prefix = "[" + prefix + "]"
+	}
+
+	output := fmt.Sprintf("%s %s%s %s", now, levelNames[level], prefix, message)
+	if fieldText := formatFields(fields); fieldText != "" {
+		output = output + " " + fieldText
+	}
+
+	switch level {
+	case FATAL:
+		l.logger.Fatal(output)
+	default:
+		l.logger.Println(output)
+	}
+}
+
+func formatFields(fields Fields) string {
+	if len(fields) == 0 {
+		return ""
+	}
+
+	keys := make([]string, 0, len(fields))
+	for key := range fields {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		parts = append(parts, fmt.Sprintf("%s=%s", key, formatFieldValue(fields[key])))
+	}
+
+	return strings.Join(parts, " ")
+}
+
+func formatFieldValue(value interface{}) string {
+	switch v := value.(type) {
+	case string:
+		if v == "" {
+			return `""`
+		}
+		if strings.ContainsAny(v, " \t\r\n\"") {
+			return fmt.Sprintf("%q", v)
+		}
+		return v
+	case error:
+		return fmt.Sprintf("%q", v.Error())
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
 // ====== 全局函数（使用 defaultLogger） ======
 
 func Debug(format string, args ...interface{}) {
@@ -181,6 +248,22 @@ func Fatal(format string, args ...interface{}) {
 	defaultLogger.log(FATAL, format, args...)
 }
 
+func DebugKV(message string, fields Fields) {
+	defaultLogger.logFields(DEBUG, message, fields)
+}
+
+func InfoKV(message string, fields Fields) {
+	defaultLogger.logFields(INFO, message, fields)
+}
+
+func WarnKV(message string, fields Fields) {
+	defaultLogger.logFields(WARN, message, fields)
+}
+
+func ErrorKV(message string, fields Fields) {
+	defaultLogger.logFields(ERROR, message, fields)
+}
+
 // ====== Logger 实例方法 ======
 
 func (l *Logger) Debug(format string, args ...interface{}) {
@@ -201,4 +284,20 @@ func (l *Logger) Error(format string, args ...interface{}) {
 
 func (l *Logger) Fatal(format string, args ...interface{}) {
 	l.log(FATAL, format, args...)
+}
+
+func (l *Logger) DebugKV(message string, fields Fields) {
+	l.logFields(DEBUG, message, fields)
+}
+
+func (l *Logger) InfoKV(message string, fields Fields) {
+	l.logFields(INFO, message, fields)
+}
+
+func (l *Logger) WarnKV(message string, fields Fields) {
+	l.logFields(WARN, message, fields)
+}
+
+func (l *Logger) ErrorKV(message string, fields Fields) {
+	l.logFields(ERROR, message, fields)
 }

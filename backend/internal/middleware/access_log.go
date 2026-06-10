@@ -22,17 +22,39 @@ func AccessLog() gin.HandlerFunc {
 		latency := time.Since(start)
 		status := c.Writer.Status()
 		clientIP := c.ClientIP()
+		requestID := GetRequestID(c)
+		errorCode, _ := c.Get("error_code")
+		userID, _ := c.Get("user_id")
+		username, _ := c.Get("username")
 
 		if query != "" {
 			path = path + "?" + query
 		}
 
+		fields := logger.Fields{
+			"request_id": requestID,
+			"method":     method,
+			"path":       path,
+			"status":     status,
+			"latency_ms": latency.Milliseconds(),
+			"client_ip":  clientIP,
+		}
+		if errorCode != nil {
+			fields["error_code"] = errorCode
+		}
+		if userID != nil {
+			fields["user_id"] = userID
+		}
+		if username != nil {
+			fields["username"] = username
+		}
+
 		if status >= 500 {
-			logger.Error("[HTTP] %s %s %d %v %s", method, path, status, latency, clientIP)
+			logger.ErrorKV("[HTTP] request completed", fields)
 		} else if status >= 400 {
-			logger.Warn("[HTTP] %s %s %d %v %s", method, path, status, latency, clientIP)
+			logger.WarnKV("[HTTP] request completed", fields)
 		} else {
-			logger.Info("[HTTP] %s %s %d %v %s", method, path, status, latency, clientIP)
+			logger.InfoKV("[HTTP] request completed", fields)
 		}
 	}
 }

@@ -28,29 +28,74 @@ func Created(c *gin.Context, data interface{}) {
 	})
 }
 
-func Error(c *gin.Context, statusCode int, message string) {
-	c.JSON(statusCode, gin.H{
+func Error(c *gin.Context, statusCode int, code string, message string) {
+	c.Set("error_code", code)
+	c.Set("error_message", message)
+
+	payload := gin.H{
 		"success": false,
+		"code":    code,
 		"error":   message,
-	})
+	}
+	if requestID := getRequestID(c); requestID != "" {
+		payload["request_id"] = requestID
+	}
+
+	c.JSON(statusCode, payload)
+}
+
+func getRequestID(c *gin.Context) string {
+	requestID, _ := c.Get("request_id")
+	if value, ok := requestID.(string); ok {
+		return value
+	}
+	return ""
 }
 
 func BadRequest(c *gin.Context, message string) {
-	Error(c, http.StatusBadRequest, message)
+	Error(c, http.StatusBadRequest, CodeInvalidParams, message)
+}
+
+func BadRequestCode(c *gin.Context, code string, message string) {
+	Error(c, http.StatusBadRequest, code, message)
 }
 
 func Unauthorized(c *gin.Context, message string) {
-	Error(c, http.StatusUnauthorized, message)
+	Error(c, http.StatusUnauthorized, CodeTokenInvalid, message)
+}
+
+func UnauthorizedCode(c *gin.Context, code string, message string) {
+	Error(c, http.StatusUnauthorized, code, message)
+}
+
+func TooManyRequests(c *gin.Context, message string) {
+	Error(c, http.StatusTooManyRequests, CodeRateLimited, message)
+}
+
+func TooManyRequestsCode(c *gin.Context, code string, message string) {
+	Error(c, http.StatusTooManyRequests, code, message)
 }
 
 func Forbidden(c *gin.Context, message string) {
-	Error(c, http.StatusForbidden, message)
+	Error(c, http.StatusForbidden, CodeInternalError, message)
+}
+
+func ForbiddenCode(c *gin.Context, code string, message string) {
+	Error(c, http.StatusForbidden, code, message)
 }
 
 func NotFound(c *gin.Context, message string) {
-	Error(c, http.StatusNotFound, message)
+	Error(c, http.StatusNotFound, CodeInternalError, message)
+}
+
+func NotFoundCode(c *gin.Context, code string, message string) {
+	Error(c, http.StatusNotFound, code, message)
 }
 
 func InternalError(c *gin.Context, message string) {
-	Error(c, http.StatusInternalServerError, message)
+	Error(c, http.StatusInternalServerError, CodeInternalError, message)
+}
+
+func InternalErrorCode(c *gin.Context, code string, message string) {
+	Error(c, http.StatusInternalServerError, code, message)
 }

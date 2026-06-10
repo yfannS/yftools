@@ -37,8 +37,14 @@ func (h *HistoryHandler) GetHistory(c *gin.Context) {
 
 	result, err := h.historyService.ListByUserID(userID, page, pageSize)
 	if err != nil {
-		logger.Error("[GetHistory] failed for userID=%d: %v", userID, err)
-		response.InternalError(c, "获取历史记录失败")
+		logger.ErrorKV("[GetHistory] failed", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"user_id":    userID,
+			"page":       page,
+			"page_size":  pageSize,
+			"error":      err,
+		})
+		response.InternalErrorCode(c, response.CodeHistoryListFailed, "获取历史记录失败")
 		return
 	}
 
@@ -59,14 +65,18 @@ func (h *HistoryHandler) GetHistoryDetail(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		response.BadRequest(c, "无效的记录 ID")
+		response.BadRequestCode(c, response.CodeInvalidRecordID, "无效的记录 ID")
 		return
 	}
 
 	detail, err := h.historyService.GetDetail(id, userID)
 	if err != nil {
-		logger.Warn("[GetHistoryDetail] id=%d not found for userID=%d", id, userID)
-		response.NotFound(c, "记录不存在")
+		logger.WarnKV("[GetHistoryDetail] not found", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"user_id":    userID,
+			"history_id": id,
+		})
+		response.NotFoundCode(c, response.CodeHistoryNotFound, "记录不存在")
 		return
 	}
 
@@ -80,12 +90,17 @@ func (h *HistoryHandler) SaveHistory(c *gin.Context) {
 
 	var req model.SaveHistoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "参数错误: "+err.Error())
+		response.BadRequestCode(c, response.CodeInvalidParams, "参数错误: "+err.Error())
 		return
 	}
 
-	logger.Info("[SaveHistory] userID=%d, markdown_len=%d, html_len=%d, theme=%s",
-		userID, len(req.Markdown), len(req.HTML), req.Theme)
+	logger.InfoKV("[SaveHistory] received", logger.Fields{
+		"request_id":   middleware.GetRequestID(c),
+		"user_id":      userID,
+		"markdown_len": len(req.Markdown),
+		"html_len":     len(req.HTML),
+		"theme":        req.Theme,
+	})
 
 	theme := req.Theme
 	if theme == "" {
@@ -94,8 +109,13 @@ func (h *HistoryHandler) SaveHistory(c *gin.Context) {
 
 	id, err := h.historyService.Save(userID, req.Markdown, req.HTML, theme)
 	if err != nil {
-		logger.Error("[SaveHistory] save failed: %v", err)
-		response.InternalError(c, "保存失败")
+		logger.ErrorKV("[SaveHistory] save failed", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"user_id":    userID,
+			"theme":      theme,
+			"error":      err,
+		})
+		response.InternalErrorCode(c, response.CodeHistorySaveFailed, "保存失败")
 		return
 	}
 
@@ -110,21 +130,34 @@ func (h *HistoryHandler) DeleteHistory(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		response.BadRequest(c, "无效的记录 ID")
+		response.BadRequestCode(c, response.CodeInvalidRecordID, "无效的记录 ID")
 		return
 	}
 
 	if err := h.historyService.DeleteByIDAndUserID(id, userID); err != nil {
 		if err == sql.ErrNoRows {
-			logger.Warn("[DeleteHistory] id=%d not found for userID=%d", id, userID)
-			response.NotFound(c, "记录不存在")
+			logger.WarnKV("[DeleteHistory] not found", logger.Fields{
+				"request_id": middleware.GetRequestID(c),
+				"user_id":    userID,
+				"history_id": id,
+			})
+			response.NotFoundCode(c, response.CodeHistoryNotFound, "记录不存在")
 			return
 		}
-		logger.Error("[DeleteHistory] failed for id=%d: %v", id, err)
-		response.InternalError(c, "删除失败")
+		logger.ErrorKV("[DeleteHistory] failed", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"user_id":    userID,
+			"history_id": id,
+			"error":      err,
+		})
+		response.InternalErrorCode(c, response.CodeHistoryDeleteFailed, "删除失败")
 		return
 	}
 
-	logger.Info("[DeleteHistory] id=%d soft deleted by userID=%d", id, userID)
+	logger.InfoKV("[DeleteHistory] success", logger.Fields{
+		"request_id": middleware.GetRequestID(c),
+		"user_id":    userID,
+		"history_id": id,
+	})
 	response.SuccessWithMessage(c, "删除成功", nil)
 }

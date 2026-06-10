@@ -16,14 +16,14 @@ func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			response.Unauthorized(c, "未提供认证令牌")
+			response.UnauthorizedCode(c, response.CodeTokenRequired, "未提供认证令牌")
 			c.Abort()
 			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		if tokenString == authHeader {
-			response.Unauthorized(c, "认证令牌格式错误")
+			response.UnauthorizedCode(c, response.CodeTokenMalformed, "认证令牌格式错误")
 			c.Abort()
 			return
 		}
@@ -31,8 +31,12 @@ func Auth() gin.HandlerFunc {
 		// 1. 先验证 JWT 签名和有效期
 		claims, err := appJwt.ParseToken(tokenString)
 		if err != nil {
-			logger.Warn("[Auth] JWT parse failed: %v", err)
-			response.Unauthorized(c, "认证令牌无效或已过期")
+			logger.WarnKV("[Auth] JWT parse failed", logger.Fields{
+				"request_id": GetRequestID(c),
+				"client_ip":  c.ClientIP(),
+				"error":      err,
+			})
+			response.UnauthorizedCode(c, response.CodeTokenInvalid, "认证令牌无效或已过期")
 			c.Abort()
 			return
 		}
@@ -41,12 +45,19 @@ func Auth() gin.HandlerFunc {
 		if appRedis.IsAvailable() {
 			sess, err := session.Get(tokenString)
 			if err != nil {
-				logger.Warn("[Auth] Redis session check error: %v", err)
+				logger.WarnKV("[Auth] Redis session check error", logger.Fields{
+					"request_id": GetRequestID(c),
+					"user_id":    claims.UserID,
+					"error":      err,
+				})
 				// Redis 读取异常，降级为 JWT 继续放行
 			} else if sess == nil {
 				// 会话不存在 = 已被登出或过期
-				logger.Warn("[Auth] Session not found in Redis for userID=%d", claims.UserID)
-				response.Unauthorized(c, "登录已失效，请重新登录")
+				logger.WarnKV("[Auth] Session not found", logger.Fields{
+					"request_id": GetRequestID(c),
+					"user_id":    claims.UserID,
+				})
+				response.UnauthorizedCode(c, response.CodeSessionExpired, "登录已失效，请重新登录")
 				c.Abort()
 				return
 			}

@@ -45,7 +45,7 @@ func main() {
 	historyRepo := md2htmlRepo.NewHistoryRepository(db)
 
 	// ====== Service 层 ======
-	userService := service.NewUserService(userRepo, cfg.JWT.Expire)
+	userService := service.NewUserService(userRepo, cfg.JWT.Expire, cfg.RateLimit)
 	goldmarkConverter := converter.NewGoldmarkConverter()
 	convertService := md2htmlService.NewConvertService(goldmarkConverter)
 	historyService := md2htmlService.NewHistoryService(historyRepo)
@@ -58,7 +58,7 @@ func main() {
 	themeHandler := md2htmlHandler.NewThemeHandler(themeService)
 
 	// ====== 路由 ======
-	r := router.SetupRouter(authHandler, convertHandler, historyHandler, themeHandler)
+	r := router.SetupRouter(cfg.RateLimit, authHandler, convertHandler, historyHandler, themeHandler)
 
 	logger.Info("Server starting on :%s", cfg.Server.Port)
 	if err := r.Run(":" + cfg.Server.Port); err != nil {
