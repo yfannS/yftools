@@ -74,24 +74,25 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.userService.Login(req, c.ClientIP())
+	loginResp, err := h.userService.Login(req, c.ClientIP())
 	if err != nil {
-		if errors.Is(err, service.ErrTooManyRequests) {
+		var loginFailure *service.LoginFailureError
+		if errors.As(err, &loginFailure) && errors.Is(err, service.ErrTooManyRequests) {
 			logger.WarnKV("[Login] rate limited", logger.Fields{
 				"request_id": middleware.GetRequestID(c),
 				"client_ip":  c.ClientIP(),
 				"username":   req.Username,
 			})
-			response.TooManyRequestsCode(c, response.CodeRateLimited, err.Error())
+			response.TooManyRequestsCodeData(c, response.CodeRateLimited, err.Error(), loginFailure.Data())
 			return
 		}
-		if errors.Is(err, service.ErrInvalidCredentials) {
+		if errors.As(err, &loginFailure) && errors.Is(err, service.ErrInvalidCredentials) {
 			logger.WarnKV("[Login] invalid credentials", logger.Fields{
 				"request_id": middleware.GetRequestID(c),
 				"client_ip":  c.ClientIP(),
 				"username":   req.Username,
 			})
-			response.UnauthorizedCode(c, response.CodeInvalidCredentials, err.Error())
+			response.UnauthorizedCodeData(c, response.CodeInvalidCredentials, err.Error(), loginFailure.Data())
 			return
 		}
 		logger.ErrorKV("[Login] failed", logger.Fields{
@@ -109,10 +110,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"client_ip":  c.ClientIP(),
 		"username":   req.Username,
 	})
-	response.Success(c, model.LoginResponse{
-		Token:    token,
-		Username: req.Username,
-	})
+	response.Success(c, loginResp)
 }
 
 func (h *AuthHandler) GetProfile(c *gin.Context) {

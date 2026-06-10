@@ -20,6 +20,8 @@ type HistoryRepository interface {
 	DeleteByIDAndUserID(id, userID int64) error
 	// FindRecentByUserIDAndTitle 查找用户最近一条相同标题的记录（UPSERT 判断）
 	FindRecentByUserIDAndTitle(userID int64, title string) (*model.Conversion, error)
+	// UpdateTitle 更新记录标题
+	UpdateTitle(id, userID int64, title string) error
 }
 
 type historyRepository struct {
@@ -169,4 +171,21 @@ func (r *historyRepository) FindRecentByUserIDAndTitle(userID int64, title strin
 	}
 
 	return c, nil
+}
+
+func (r *historyRepository) UpdateTitle(id, userID int64, title string) error {
+	result, err := r.db.Exec(
+		"UPDATE md2html_conversions SET title = ?, updated_at = NOW() WHERE id = ? AND user_id = ? AND is_delete = 0",
+		title, id, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("update title: %w", err)
+	}
+
+	affected, _ := result.RowsAffected()
+	if affected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }

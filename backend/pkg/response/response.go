@@ -29,6 +29,10 @@ func Created(c *gin.Context, data interface{}) {
 }
 
 func Error(c *gin.Context, statusCode int, code string, message string) {
+	ErrorWithData(c, statusCode, code, message, nil)
+}
+
+func ErrorWithData(c *gin.Context, statusCode int, code string, message string, data interface{}) {
 	c.Set("error_code", code)
 	c.Set("error_message", message)
 
@@ -36,6 +40,9 @@ func Error(c *gin.Context, statusCode int, code string, message string) {
 		"success": false,
 		"code":    code,
 		"error":   message,
+	}
+	if data != nil {
+		payload["data"] = data
 	}
 	if requestID := getRequestID(c); requestID != "" {
 		payload["request_id"] = requestID
@@ -68,12 +75,20 @@ func UnauthorizedCode(c *gin.Context, code string, message string) {
 	Error(c, http.StatusUnauthorized, code, message)
 }
 
+func UnauthorizedCodeData(c *gin.Context, code string, message string, data interface{}) {
+	ErrorWithData(c, http.StatusUnauthorized, code, message, data)
+}
+
 func TooManyRequests(c *gin.Context, message string) {
 	Error(c, http.StatusTooManyRequests, CodeRateLimited, message)
 }
 
 func TooManyRequestsCode(c *gin.Context, code string, message string) {
 	Error(c, http.StatusTooManyRequests, code, message)
+}
+
+func TooManyRequestsCodeData(c *gin.Context, code string, message string, data interface{}) {
+	ErrorWithData(c, http.StatusTooManyRequests, code, message, data)
 }
 
 func Forbidden(c *gin.Context, message string) {

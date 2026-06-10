@@ -23,8 +23,15 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token    string `json:"token"`
-	Username string `json:"username"`
+	Token     string    `json:"token"`
+	Username  string    `json:"username"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+type LoginFailureData struct {
+	RemainingAttempts int   `json:"remaining_attempts"`
+	RetryAfterSeconds int64 `json:"retry_after_seconds"`
+	Locked            bool  `json:"locked"`
 }
 
 type UserProfile struct {
@@ -77,8 +84,8 @@ type ConvertRequest struct {
 }
 
 type ConvertResponse struct {
-	HTML       string `json:"html"`
-	Formatted  string `json:"formatted"`
+	HTML      string `json:"html"`
+	Formatted string `json:"formatted"`
 }
 
 // SaveHistoryRequest 保存历史请求（html 可选）
@@ -86,6 +93,10 @@ type SaveHistoryRequest struct {
 	Markdown string `json:"markdown" binding:"required"`
 	HTML     string `json:"html"`
 	Theme    string `json:"theme"`
+}
+
+type RenameHistoryRequest struct {
+	Title string `json:"title" binding:"required"`
 }
 
 // HistoryPageResponse 历史列表分页响应（轻量）

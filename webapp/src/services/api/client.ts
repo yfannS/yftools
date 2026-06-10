@@ -1,4 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_BASE || ''
+const AUTH_EXPIRED_EVENT = 'app:auth-expired'
 
 interface RequestOptions {
   method: string
@@ -12,11 +13,17 @@ interface RequestOptions {
 export class ApiError extends Error {
   status: number
   body: any
+  code?: string
+  requestId?: string
+  data?: any
 
   constructor(status: number, body: any) {
     super(body?.message || body?.error || `API error ${status}`)
     this.status = status
     this.body = body
+    this.code = typeof body?.code === 'string' ? body.code : undefined
+    this.requestId = typeof body?.request_id === 'string' ? body.request_id : undefined
+    this.data = body?.data
   }
 }
 
@@ -43,15 +50,23 @@ export async function request<T>(opts: RequestOptions): Promise<T> {
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   })
 
-  if (res.status === 401) {
-    // Token 失效：清除登录态，不中断编辑
-    localStorage.removeItem('m2h_webapp_token')
-    localStorage.removeItem('m2h_webapp_username')
-  }
-
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new ApiError(res.status, err)
+    const apiError = new ApiError(res.status, err)
+
+    if (res.status === 401 && isAuthFailure(apiError.code)) {
+      clearLocalAuth()
+      window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT, {
+        detail: {
+          status: apiError.status,
+          code: apiError.code,
+          message: apiError.message,
+          path: opts.path,
+        },
+      }))
+    }
+
+    throw apiError
   }
 
   if (res.status === 204) return undefined as T
@@ -69,3 +84,18 @@ export async function request<T>(opts: RequestOptions): Promise<T> {
   // 兼容：无 data 字段时返回整个响应
   return json as T
 }
+
+function clearLocalAuth() {
+  localStorage.removeItem('m2h_webapp_token')
+  localStorage.removeItem('m2h_webapp_username')
+  localStorage.removeItem('m2h_webapp_expires_at')
+}
+
+function isAuthFailure(code?: string) {
+  return code === 'AUTH_TOKEN_REQUIRED'
+    || code === 'AUTH_TOKEN_MALFORMED'
+    || code === 'AUTH_TOKEN_INVALID'
+    || code === 'AUTH_SESSION_EXPIRED'
+}
+
+export { AUTH_EXPIRED_EVENT }

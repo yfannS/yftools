@@ -161,3 +161,35 @@ func (h *HistoryHandler) DeleteHistory(c *gin.Context) {
 	})
 	response.SuccessWithMessage(c, "删除成功", nil)
 }
+
+// RenameHistory 修改历史记录标题
+func (h *HistoryHandler) RenameHistory(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		response.BadRequestCode(c, response.CodeInvalidRecordID, "无效的记录 ID")
+		return
+	}
+
+	var req model.RenameHistoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequestCode(c, response.CodeInvalidParams, "参数错误: "+err.Error())
+		return
+	}
+
+	if err := h.historyService.RenameTitle(id, userID, req.Title); err != nil {
+		logger.ErrorKV("[RenameHistory] failed", logger.Fields{
+			"request_id": middleware.GetRequestID(c),
+			"user_id":    userID,
+			"history_id": id,
+			"error":      err,
+		})
+		response.InternalErrorCode(c, response.CodeHistoryRenameFailed, "修改标题失败")
+		return
+	}
+
+	logger.Debug("[RenameHistory] success id=%d title=%s", id, req.Title)
+	response.SuccessWithMessage(c, "修改成功", nil)
+}

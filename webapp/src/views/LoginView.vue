@@ -107,6 +107,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from '@/composables/useToast'
+import { getApiErrorMessage } from '@/services/api/errorHandling'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -147,7 +149,8 @@ async function onLogin() {
     const redirect = (router.currentRoute.value.query.redirect as string) || '/md2html'
     router.push(redirect)
   } catch (e: any) {
-    error.value = e.message || '登录失败'
+    error.value = getApiErrorMessage(e, '登录失败')
+    showToast(error.value, 'err')
     triggerShake()
   } finally {
     loading.value = false
@@ -161,9 +164,11 @@ async function onRegister() {
   try {
     await authStore.register(username.value, password.value)
     success.value = '注册成功，请登录'
+    showToast(success.value, 'ok')
     mode.value = 'login'
   } catch (e: any) {
-    error.value = e.message || '注册失败'
+    error.value = getApiErrorMessage(e, '注册失败')
+    showToast(error.value, 'err')
     triggerShake()
   } finally {
     loading.value = false

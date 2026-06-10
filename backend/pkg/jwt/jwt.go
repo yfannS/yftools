@@ -26,14 +26,21 @@ func getSecret() []byte {
 	return []byte(jwtSecret)
 }
 
-func GenerateToken(userID int64, username string, expireStr string) (string, error) {
+func ResolveExpire(expireStr string) time.Duration {
 	if expireStr == "" {
 		expireStr = "168h"
 	}
+
 	expire, err := time.ParseDuration(expireStr)
-	if err != nil {
-		expire = 7 * 24 * time.Hour // default 7 days
+	if err != nil || expire <= 0 {
+		return 7 * 24 * time.Hour
 	}
+
+	return expire
+}
+
+func GenerateToken(userID int64, username string, expireStr string) (string, error) {
+	expire := ResolveExpire(expireStr)
 
 	claims := Claims{
 		UserID:   userID,

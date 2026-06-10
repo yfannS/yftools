@@ -95,6 +95,16 @@ export const md2htmlApi = {
     })
   },
 
+  /** 修改历史记录标题 */
+  renameHistory(id: number, title: string) {
+    return request<{ message: string }>({
+      method: 'PATCH',
+      path: `/api/tools/md2html/history/${id}`,
+      body: { title },
+      auth: true,
+    })
+  },
+
   /** 获取主题列表 */
   getThemes() {
     return request<{ id: string; name: string; description: string }[]>({

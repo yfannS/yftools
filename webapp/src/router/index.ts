@@ -46,7 +46,14 @@ router.beforeEach((to, _from, next) => {
   // 需要认证但未登录
   if (to.meta.requiresAuth) {
     const token = localStorage.getItem('m2h_webapp_token')
-    if (!token) {
+    const expiresAt = localStorage.getItem('m2h_webapp_expires_at')
+    const expired = !!expiresAt && !Number.isNaN(new Date(expiresAt).getTime()) && new Date(expiresAt).getTime() <= Date.now()
+    if (!token || expired) {
+      if (expired) {
+        localStorage.removeItem('m2h_webapp_token')
+        localStorage.removeItem('m2h_webapp_username')
+        localStorage.removeItem('m2h_webapp_expires_at')
+      }
       next({ name: 'login', query: { redirect: to.fullPath } })
       return
     }

@@ -14,6 +14,7 @@ type HistoryService interface {
 	ListByUserID(userID int64, page, pageSize int) (*HistoryPageResult, error)
 	GetDetail(id, userID int64) (*model.HistoryDetail, error)
 	DeleteByIDAndUserID(id, userID int64) error
+	RenameTitle(id, userID int64, title string) error
 }
 
 type HistoryPageResult struct {
@@ -79,6 +80,16 @@ func (s *historyService) GetDetail(id, userID int64) (*model.HistoryDetail, erro
 func (s *historyService) DeleteByIDAndUserID(id, userID int64) error {
 	if err := s.historyRepo.DeleteByIDAndUserID(id, userID); err != nil {
 		return fmt.Errorf("delete history: %w", err)
+	}
+	return nil
+}
+
+func (s *historyService) RenameTitle(id, userID int64, title string) error {
+	if title == "" {
+		return fmt.Errorf("标题不能为空")
+	}
+	if err := s.historyRepo.UpdateTitle(id, userID, title); err != nil {
+		return fmt.Errorf("rename history: %w", err)
 	}
 	return nil
 }

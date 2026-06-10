@@ -64,13 +64,29 @@
           v-for="(item, index) in sortedItems"
           :key="item.id"
           class="history-item"
+          :class="{ 'is-editing': editingId === item.id }"
           :style="{ '--stagger-index': index }"
           @click="onItemClick(item)"
         >
           <div class="item-accent-bar"></div>
           <div class="item-main">
             <div class="item-row">
-              <div class="item-title">{{ item.title || '未命名文档' }}</div>
+              <div class="title-container" v-if="editingId !== item.id">
+                <div class="item-title" @click.stop="onItemClick(item)">{{ item.title || '未命名文档' }}</div>
+                <button class="edit-title-btn" @click.stop="startEditing(item)" title="重命名">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+              </div>
+              <input
+                v-else
+                class="item-title-input"
+                v-model="editingTitle"
+                @keydown.enter="confirmEdit(item)"
+                @keydown.escape="cancelEdit"
+                @blur="onBlur(item)"
+                @click.stop
+                :ref="(el: any) => { if (editingId === item.id && el) el.focus() }"
+              />
               <div class="item-meta">
                 <span class="meta-chars">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -146,6 +162,9 @@ const editorStore = useEditorStore()
 const router = useRouter()
 const sortOrder = ref<'desc' | 'asc'>('desc')
 const pendingItem = ref<HistoryListItem | null>(null)
+const editingId = ref<number | null>(null)
+const editingTitle = ref('')
+let isCanceling = false
 
 const totalPages = computed(() => Math.ceil(historyStore.total / historyStore.pageSize))
 const sortedItems = computed(() => {
@@ -198,6 +217,35 @@ async function loadHistoryItem(item: HistoryListItem, mode: 'replace' | 'new') {
 async function onDelete(id: number) {
   if (!confirm('确定删除这条记录？')) return
   await historyStore.deleteItem(id)
+}
+
+function startEditing(item: HistoryListItem) {
+  editingId.value = item.id
+  editingTitle.value = item.title || '未命名文档'
+  isCanceling = false
+}
+
+async function confirmEdit(item: HistoryListItem) {
+  if (editingId.value === null) return
+  if (isCanceling) { isCanceling = false; return }
+  const newTitle = editingTitle.value.trim()
+  editingId.value = null
+  if (!newTitle || newTitle === item.title) return
+  await historyStore.renameItem(item.id, newTitle)
+}
+
+function onBlur(item: HistoryListItem) {
+  // blur 延迟执行，让 escape 的 cancelEdit 先设置标记
+  setTimeout(() => {
+    if (!isCanceling) {
+      confirmEdit(item)
+    }
+  }, 50)
+}
+
+function cancelEdit() {
+  isCanceling = true
+  editingId.value = null
 }
 
 onMounted(() => {
@@ -414,6 +462,7 @@ onMounted(() => {
 
 /* ===== 列表容器 ===== */
 .history-list-wrapper {
+  position: relative;
   animation: pageEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -437,6 +486,13 @@ onMounted(() => {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   animation: cardEnter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: calc(var(--stagger-index, 0) * 50ms);
+}
+
+.history-item.is-editing {
+  z-index: 1001;
+  position: relative;
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
 }
 
 @keyframes cardEnter {
@@ -517,8 +573,59 @@ onMounted(() => {
   min-width: 0;
 }
 
+.title-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.edit-title-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.edit-title-btn:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+  transform: scale(1.05);
+}
+
+.history-item:hover .edit-title-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
 .history-item:hover .item-title {
   color: var(--accent);
+}
+
+.item-title-input {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+  flex-shrink: 1;
+  min-width: 0;
+  padding: 0 4px;
+  margin: 0 -4px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  outline: none;
+  font-family: inherit;
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.12);
 }
 
 .item-meta {

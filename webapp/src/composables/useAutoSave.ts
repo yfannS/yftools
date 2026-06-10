@@ -1,4 +1,5 @@
 import { ref, watch, type Ref } from 'vue'
+import { getApiErrorCode, getApiErrorMessage } from '@/services/api/errorHandling'
 import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { md2htmlApi } from '@/services/api/md2html'
@@ -51,6 +52,10 @@ export function useAutoSave(toast: ToastFn, renderReady: Ref<boolean>) {
         // 保存失败重置状态以便下次重试
         lastSavedContent.value = ''
         editorStore.markSaveError()
+        const code = getApiErrorCode(err)
+        if (code !== 'AUTH_SESSION_EXPIRED' && code !== 'AUTH_TOKEN_INVALID') {
+          toast(getApiErrorMessage(err, '自动保存失败'), 'err')
+        }
       })
       .finally(() => {
         isSaving.value = false
@@ -109,8 +114,12 @@ export function useAutoSave(toast: ToastFn, renderReady: Ref<boolean>) {
     if (authStore.isLoggedIn && editorStore.dirty && editorStore.content.trim()) {
       md2htmlApi.saveHistory(editorStore.content, 'default').then(() => {
         editorStore.markSaved()
-      }).catch(() => {
+      }).catch((err) => {
         editorStore.markSaveError()
+        const code = getApiErrorCode(err)
+        if (code !== 'AUTH_SESSION_EXPIRED' && code !== 'AUTH_TOKEN_INVALID') {
+          toast(getApiErrorMessage(err, '自动保存失败'), 'err')
+        }
       })
     }
   }

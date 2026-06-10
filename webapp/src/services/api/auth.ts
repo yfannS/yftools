@@ -3,6 +3,7 @@ import { request } from './client'
 export interface LoginData {
   token: string
   username: string
+  expires_at: string
 }
 
 export interface ProfileData {

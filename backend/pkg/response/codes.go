@@ -15,6 +15,7 @@ const (
 	CodeHistoryListFailed   = "HISTORY_LIST_FAILED"
 	CodeHistorySaveFailed   = "HISTORY_SAVE_FAILED"
 	CodeHistoryDeleteFailed = "HISTORY_DELETE_FAILED"
+	CodeHistoryRenameFailed = "HISTORY_RENAME_FAILED"
 	CodeConvertFailed       = "MARKDOWN_CONVERT_FAILED"
 	CodeInternalError       = "INTERNAL_ERROR"
 )
