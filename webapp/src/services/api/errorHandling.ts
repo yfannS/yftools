@@ -62,6 +62,12 @@ export function mapApiErrorMessage(code?: string, fallback?: string, data?: Reco
       return '删除历史记录失败'
     case 'HISTORY_RENAME_FAILED':
       return '修改标题失败'
+    case 'JSON_FORMAT_FAILED':
+      return 'JSON 格式化失败'
+    case 'JSON_VALIDATE_FAILED':
+      return 'JSON 校验失败'
+    case 'JSON_HISTORY_FAILED':
+      return 'JSON 历史记录操作失败'
     case 'MARKDOWN_CONVERT_FAILED':
       return 'Markdown 转换失败'
     case 'INTERNAL_ERROR':

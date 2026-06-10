@@ -4,10 +4,13 @@ import (
 	"md2html/internal/config"
 	"md2html/internal/handler"
 	md2htmlHandler "md2html/internal/handler/tools/md2html"
+	jsonHandler "md2html/internal/handler/tools/jsonformatter"
 	"md2html/internal/repository"
+	jsonRepo "md2html/internal/repository/tools/jsonformatter"
 	md2htmlRepo "md2html/internal/repository/tools/md2html"
 	"md2html/internal/router"
 	"md2html/internal/service"
+	jsonService "md2html/internal/service/tools/jsonformatter"
 	md2htmlService "md2html/internal/service/tools/md2html"
 	"md2html/pkg/converter"
 	appJwt "md2html/pkg/jwt"
@@ -43,6 +46,7 @@ func main() {
 	// ====== Repository 层 ======
 	userRepo := repository.NewUserRepository(db)
 	historyRepo := md2htmlRepo.NewHistoryRepository(db)
+	jsonHistoryRepo := jsonRepo.NewJsonHistoryRepository(db)
 
 	// ====== Service 层 ======
 	userService := service.NewUserService(userRepo, cfg.JWT.Expire, cfg.RateLimit)
@@ -50,15 +54,17 @@ func main() {
 	convertService := md2htmlService.NewConvertService(goldmarkConverter)
 	historyService := md2htmlService.NewHistoryService(historyRepo)
 	themeService := md2htmlService.NewThemeService()
+	jsonFormatService := jsonService.NewJsonFormatService(jsonHistoryRepo)
 
 	// ====== Handler 层 ======
 	authHandler := handler.NewAuthHandler(userService)
 	convertHandler := md2htmlHandler.NewConvertHandler(convertService)
 	historyHandler := md2htmlHandler.NewHistoryHandler(historyService)
 	themeHandler := md2htmlHandler.NewThemeHandler(themeService)
+	jsonFormatHandler := jsonHandler.NewJsonFormatHandler(jsonFormatService)
 
 	// ====== 路由 ======
-	r := router.SetupRouter(cfg.RateLimit, authHandler, convertHandler, historyHandler, themeHandler)
+	r := router.SetupRouter(cfg.RateLimit, authHandler, convertHandler, historyHandler, themeHandler, jsonFormatHandler)
 
 	logger.Info("Server starting on :%s", cfg.Server.Port)
 	if err := r.Run(":" + cfg.Server.Port); err != nil {

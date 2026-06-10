@@ -4,6 +4,7 @@ import (
 	"md2html/internal/config"
 	"md2html/internal/handler"
 	md2htmlHandler "md2html/internal/handler/tools/md2html"
+	jsonHandler "md2html/internal/handler/tools/jsonformatter"
 	"md2html/internal/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,7 @@ func SetupRouter(
 	convertHandler *md2htmlHandler.ConvertHandler,
 	historyHandler *md2htmlHandler.HistoryHandler,
 	themeHandler *md2htmlHandler.ThemeHandler,
+	jsonFormatHandler *jsonHandler.JsonFormatHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -56,11 +58,20 @@ func SetupRouter(
 		md2html.GET("/themes", themeHandler.GetThemes)
 	}
 
-	// 未来工具在此扩展：
-	// jsonTools := toolsGroup.Group("/json-formatter")
-	// {
-	//     jsonTools.POST("/format", ...)
-	// }
+	// --- JSON 格式化工具 ---
+	jsonFmt := toolsGroup.Group("/json-formatter")
+	{
+		// 公开接口
+		jsonFmt.POST("/format", jsonFormatHandler.Format)
+		jsonFmt.POST("/validate", jsonFormatHandler.Validate)
+
+		// 需认证接口
+		jsonFmt.GET("/history", middleware.Auth(), jsonFormatHandler.GetHistory)
+		jsonFmt.GET("/history/:id", middleware.Auth(), jsonFormatHandler.GetHistoryDetail)
+		jsonFmt.POST("/history", middleware.Auth(), jsonFormatHandler.SaveHistory)
+		jsonFmt.PATCH("/history/:id", middleware.Auth(), jsonFormatHandler.RenameHistory)
+		jsonFmt.DELETE("/history/:id", middleware.Auth(), jsonFormatHandler.DeleteHistory)
+	}
 
 	return r
 }

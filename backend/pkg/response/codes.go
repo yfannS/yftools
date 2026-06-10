@@ -17,5 +17,8 @@ const (
 	CodeHistoryDeleteFailed = "HISTORY_DELETE_FAILED"
 	CodeHistoryRenameFailed = "HISTORY_RENAME_FAILED"
 	CodeConvertFailed       = "MARKDOWN_CONVERT_FAILED"
+	CodeJsonFormatFailed    = "JSON_FORMAT_FAILED"
+	CodeJsonValidateFailed  = "JSON_VALIDATE_FAILED"
+	CodeJsonHistoryFailed   = "JSON_HISTORY_FAILED"
 	CodeInternalError       = "INTERNAL_ERROR"
 )

@@ -116,6 +116,62 @@ type Theme struct {
 	Description string `json:"description"`
 }
 
+// ==================== JSON Formatter ====================
+
+type JsonFormatRequest struct {
+	Input    string `json:"input" binding:"required"`
+	Indent   int    `json:"indent"`
+	Minify   bool   `json:"minify"`
+}
+
+type JsonFormatResponse struct {
+	Output   string `json:"output"`
+	Size     int    `json:"size"`
+	Minified bool   `json:"minified"`
+}
+
+type JsonValidateRequest struct {
+	Input string `json:"input" binding:"required"`
+}
+
+type JsonValidateResponse struct {
+	Valid  bool   `json:"valid"`
+	Error  string `json:"error,omitempty"`
+	Keys   int    `json:"keys,omitempty"`
+	Depth  int    `json:"depth,omitempty"`
+}
+
+type JsonHistoryListItem struct {
+	ID        int64     `json:"id"`
+	Title     string    `json:"title"`
+	CharCount int       `json:"char_count"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type JsonHistoryDetail struct {
+	ID        int64     `json:"id"`
+	Title     string    `json:"title"`
+	Input     string    `json:"input"`
+	Output    string    `json:"output"`
+	CharCount int       `json:"char_count"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type JsonSaveHistoryRequest struct {
+	Input  string `json:"input" binding:"required"`
+	Output string `json:"output"`
+}
+
+type JsonHistoryPageResponse struct {
+	Data       []JsonHistoryListItem `json:"data"`
+	Total      int64                 `json:"total"`
+	Page       int                   `json:"page"`
+	Size       int                   `json:"size"`
+	TotalPages int                   `json:"total_pages"`
+}
+
 // ==================== Common ====================
 
 type ApiResponse struct {

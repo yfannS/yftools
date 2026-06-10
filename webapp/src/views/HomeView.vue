@@ -14,7 +14,15 @@
           <p>实时编辑预览，代码高亮，流程图渲染，导出独立 HTML</p>
         </div>
       </router-link>
-      <!-- 未来工具卡片在此添加 -->
+      <router-link to="/json-formatter" class="tool-card">
+        <div class="tool-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        </div>
+        <div class="tool-info">
+          <h3>JSON 格式化</h3>
+          <p>格式化、压缩、校验 JSON，支持自定义缩进</p>
+        </div>
+      </router-link>
     </div>
   </div>
 </template>

@@ -14,6 +14,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Markdown → HTML' }
   },
   {
+    path: '/json-formatter',
+    name: 'json-formatter',
+    component: () => import('@/views/JsonFormatterView.vue'),
+    meta: { title: 'JSON 格式化' }
+  },
+  {
     path: '/history',
     name: 'history',
     component: () => import('@/views/HistoryView.vue'),
