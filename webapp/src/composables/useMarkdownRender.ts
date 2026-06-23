@@ -3,13 +3,11 @@ import { useMarkdownWorker } from './useMarkdownWorker'
 import { useMermaid } from './useMermaid'
 import { useKaTeX } from './useKaTeX'
 import { useHighlight } from './useHighlight'
-import { useEditorStore } from '@/stores/editor'
 import { usePreviewStore } from '@/stores/preview'
 
 type ToastFn = (msg: string, type?: string) => void
 
 export function useMarkdownRender(previewRef: Ref<HTMLElement | undefined>, toast: ToastFn) {
-  const editorStore = useEditorStore()
   const previewStore = usePreviewStore()
 
   const { worker, renderToken, isRendering, initWorker, renderMarkdown, terminateWorker } = useMarkdownWorker()

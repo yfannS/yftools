@@ -148,7 +148,7 @@ async function onLogin() {
     await authStore.login(username.value, password.value)
     const redirect = (router.currentRoute.value.query.redirect as string) || '/md2html'
     router.push(redirect)
-  } catch (e: any) {
+  } catch (e) {
     error.value = getApiErrorMessage(e, '登录失败')
     showToast(error.value, 'err')
     triggerShake()
@@ -166,7 +166,7 @@ async function onRegister() {
     success.value = '注册成功，请登录'
     showToast(success.value, 'ok')
     mode.value = 'login'
-  } catch (e: any) {
+  } catch (e) {
     error.value = getApiErrorMessage(e, '注册失败')
     showToast(error.value, 'err')
     triggerShake()

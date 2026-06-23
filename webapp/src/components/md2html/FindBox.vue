@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, inject, type Ref } from 'vue'
+import { ref, onMounted, nextTick, inject } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import type { FindReplaceAPI } from '@/composables/useFindReplace'
 

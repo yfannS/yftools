@@ -1,7 +1,7 @@
 import { ref, onUnmounted, shallowRef } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { usePreviewStore } from '@/stores/preview'
-import { RENDER_DEBOUNCE_MS, CHUNK_RENDER_THRESHOLD, CHUNK_SIZE } from '@/utils/constants'
+import { RENDER_DEBOUNCE_MS } from '@/utils/constants'
 
 interface WorkerMessage {
   id: number

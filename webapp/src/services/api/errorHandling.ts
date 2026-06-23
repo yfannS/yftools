@@ -31,7 +31,7 @@ export function getApiErrorMessage(error: unknown, fallback = '操作失败，�
   return mapApiErrorMessage(error.code, error.message || fallback, error.data)
 }
 
-export function mapApiErrorMessage(code?: string, fallback?: string, data?: Record<string, any>) {
+export function mapApiErrorMessage(code?: string, fallback?: string, data?: Record<string, unknown>) {
   switch (code) {
     case 'INVALID_PARAMS':
       return '请检查输入内容后重试'
@@ -77,7 +77,7 @@ export function mapApiErrorMessage(code?: string, fallback?: string, data?: Reco
   }
 }
 
-function buildInvalidCredentialsMessage(data?: Record<string, any>) {
+function buildInvalidCredentialsMessage(data?: Record<string, unknown>) {
   const remaining = toNonNegativeInt(data?.remaining_attempts)
   if (remaining === undefined) {
     return '用户名或密码错误'
@@ -94,7 +94,7 @@ function buildInvalidCredentialsMessage(data?: Record<string, any>) {
   return `用户名或密码错误，还可尝试 ${remaining} 次`
 }
 
-function buildRateLimitedMessage(data?: Record<string, any>) {
+function buildRateLimitedMessage(data?: Record<string, unknown>) {
   const retryAfter = toNonNegativeInt(data?.retry_after_seconds)
   if (retryAfter && retryAfter > 0) {
     return `尝试次数过多，请在 ${formatRetryAfter(retryAfter)}后重试`

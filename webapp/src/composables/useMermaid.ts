@@ -1,4 +1,4 @@
-import { nextTick, type Ref } from 'vue'
+import { type Ref } from 'vue'
 
 type ToastFn = (msg: string, type?: string) => void
 
@@ -94,14 +94,16 @@ export function useMermaid(previewRef: Ref<HTMLElement | undefined>, toast: Toas
     const nodes = container.querySelectorAll('.mermaid')
     if (nodes.length) {
       const currentToken = renderToken.value
-      ;(window as any).mermaid
-        .run({ nodes: Array.from(nodes) })
-        .then(() => {
-          if (renderToken.value === currentToken) {
-            addMermaidDownloadButtons()
-          }
-        })
-        .catch(() => {})
+      const api = window.mermaid
+      if (api) {
+        api.run({ nodes: Array.from(nodes) })
+          .then(() => {
+            if (renderToken.value === currentToken) {
+              addMermaidDownloadButtons()
+            }
+          })
+          .catch(() => {})
+      }
     }
   }
 

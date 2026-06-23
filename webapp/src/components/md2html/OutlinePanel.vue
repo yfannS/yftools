@@ -58,7 +58,6 @@ const activeId = ref<string>('')
 const visible = ref(false)
 
 const triggerRef = ref<HTMLElement>()
-const dropdownRef = ref<HTMLElement>()
 
 const dropdownStyle = ref<Record<string, string>>({})
 let leaveTimer: ReturnType<typeof setTimeout> | null = null

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -37,6 +38,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/SettingsView.vue'),
     meta: { title: '设置' }
   },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('@/views/NotFoundView.vue'),
+    meta: { title: '页面不存在' }
+  },
 ]
 
 const router = createRouter({
@@ -49,20 +56,10 @@ router.beforeEach((to, _from, next) => {
   // 更新页面标题
   document.title = `${to.meta.title || '工具箱'} - Toolbox`
 
-  // 需要认证但未登录
-  if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('m2h_webapp_token')
-    const expiresAt = localStorage.getItem('m2h_webapp_expires_at')
-    const expired = !!expiresAt && !Number.isNaN(new Date(expiresAt).getTime()) && new Date(expiresAt).getTime() <= Date.now()
-    if (!token || expired) {
-      if (expired) {
-        localStorage.removeItem('m2h_webapp_token')
-        localStorage.removeItem('m2h_webapp_username')
-        localStorage.removeItem('m2h_webapp_expires_at')
-      }
-      next({ name: 'login', query: { redirect: to.fullPath } })
-      return
-    }
+  // 需要认证的页面：复用 authStore.checkAuth 实时校验登录态（含过期清理）
+  if (to.meta.requiresAuth && !useAuthStore().checkAuth()) {
+    next({ name: 'login', query: { redirect: to.fullPath } })
+    return
   }
 
   next()

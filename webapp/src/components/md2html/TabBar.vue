@@ -50,7 +50,6 @@ const editorStore = useEditorStore()
 const renamingTabId = ref<string | null>(null)
 const renameValue = ref('')
 const renameInputRef = ref<HTMLInputElement>()
-const tabListRef = ref<HTMLElement>()
 
 function startRename(tabId: string) {
   const tab = editorStore.tabs.find(t => t.id === tabId)
@@ -79,7 +78,7 @@ function cancelRename() {
   renamingTabId.value = null
 }
 
-function onContextMenu(e: MouseEvent, tabId: string) {
+function onContextMenu(_e: MouseEvent, tabId: string) {
   // 简单的右键菜单：关闭其他
   if (confirm('关闭其他标签？')) {
     editorStore.closeOtherTabs(tabId)

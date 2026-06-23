@@ -145,13 +145,18 @@ export const useEditorStore = defineStore('editor', () => {
   // ===== 持久化 =====
 
   function saveTabsToStorage() {
-    const data = tabs.value.map(t => ({
-      id: t.id,
-      filename: t.filename,
-      content: t.content,
-    }))
-    localStorage.setItem('m2h_webapp_tabs', JSON.stringify(data))
-    localStorage.setItem('m2h_webapp_active_tab', activeTabId.value)
+    try {
+      const data = tabs.value.map(t => ({
+        id: t.id,
+        filename: t.filename,
+        content: t.content,
+      }))
+      localStorage.setItem('m2h_webapp_tabs', JSON.stringify(data))
+      localStorage.setItem('m2h_webapp_active_tab', activeTabId.value)
+    } catch (e) {
+      // localStorage 超限(QuotaExceededError)或不可用时静默降级
+      console.warn('保存标签页到本地存储失败', e)
+    }
   }
 
   function init() {

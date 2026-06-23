@@ -1,4 +1,4 @@
-import { ref, onUnmounted } from 'vue'
+import { ref } from 'vue'
 
 export function usePanelResize() {
   const splitRatio = ref(parseFloat(localStorage.getItem('md2html-split-ratio') || '0.5'))
@@ -16,8 +16,6 @@ export function usePanelResize() {
     isResizing.value = true
     document.body.classList.add('resize-active')
 
-    const startX = e.clientX
-    const startRatio = splitRatio.value
     const totalWidth = mainEl.offsetWidth
 
     function onMouseMove(e: MouseEvent) {

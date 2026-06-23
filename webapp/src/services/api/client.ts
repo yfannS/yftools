@@ -10,14 +10,24 @@ interface RequestOptions {
   raw?: boolean
 }
 
+export interface ApiErrorBody {
+  success?: boolean
+  message?: string
+  error?: string
+  code?: string
+  request_id?: string
+  data?: Record<string, unknown>
+  [key: string]: unknown
+}
+
 export class ApiError extends Error {
   status: number
-  body: any
+  body: ApiErrorBody
   code?: string
   requestId?: string
-  data?: any
+  data?: Record<string, unknown>
 
-  constructor(status: number, body: any) {
+  constructor(status: number, body: ApiErrorBody) {
     super(body?.message || body?.error || `API error ${status}`)
     this.status = status
     this.body = body

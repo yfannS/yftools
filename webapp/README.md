@@ -56,7 +56,7 @@ webapp/
 │   │   └── useExportHtml.ts      # 导出完整 HTML
 │   ├── services/
 │   │   └── api/                  # API 客户端层
-│   │       ├── client.ts         # axios 封装（拦截器、baseURL）
+│   │       ├── client.ts         # fetch 封装（拦截器、baseURL）
 │   │       ├── auth.ts           # 认证 API
 │   │       └── md2html.ts        # md2html 工具 API
 │   ├── assets/styles/
@@ -102,6 +102,7 @@ npm run preview
 |------|------|------|------|
 | `/` | HomeView | - | 工具箱首页 |
 | `/md2html` | Md2HtmlView | - | Markdown 转换器 |
+| `/json-formatter` | JsonFormatterView | - | JSON 格式化 |
 | `/history` | HistoryView | JWT | 转换历史 |
 | `/login` | LoginView | - | 登录 |
 | `/settings` | SettingsView | - | 设置 |
@@ -145,7 +146,7 @@ npm run preview
 
 | 变量 | 开发默认值 | 生产值 | 说明 |
 |------|-----------|--------|------|
-| `VITE_API_BASE_URL` | `http://localhost:8000` | `/` | 后端 API 地址 |
+| `VITE_API_BASE` | `http://localhost:8000` | `/` | 后端 API 地址 |
 
 开发环境配置在 `.env`，生产环境配置在 `.env.production`。
 

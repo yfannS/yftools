@@ -7,7 +7,7 @@ export function useKaTeX(previewRef: Ref<HTMLElement | undefined>) {
     if (!container) return
 
     try {
-      ;(window as any).renderMathInElement(container, {
+      window.renderMathInElement?.(container, {
         delimiters: [
           { left: '$$', right: '$$', display: true },
           { left: '$', right: '$', display: false },
@@ -16,7 +16,7 @@ export function useKaTeX(previewRef: Ref<HTMLElement | undefined>) {
         ],
         throwOnError: false
       })
-    } catch (_) { /* ignore */ }
+    } catch { /* ignore */ }
   }
 
   return {

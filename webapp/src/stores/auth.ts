@@ -97,5 +97,15 @@ export const useAuthStore = defineStore('auth', () => {
     return expireAt <= Date.now()
   }
 
-  return { token, username, expiresAt, isLoggedIn, init, login, register, logout, syncFromStorage }
+  /** 实时校验登录态：token 存在且未过期，过期则清理并返回 false */
+  function checkAuth(): boolean {
+    if (!token.value) return false
+    if (isExpired(expiresAt.value)) {
+      logout(false)
+      return false
+    }
+    return true
+  }
+
+  return { token, username, expiresAt, isLoggedIn, init, login, register, logout, syncFromStorage, checkAuth }
 })

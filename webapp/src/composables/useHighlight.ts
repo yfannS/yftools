@@ -1,4 +1,4 @@
-import { nextTick, type Ref } from 'vue'
+import { type Ref } from 'vue'
 
 // 语言别名映射（完整版，与原始 index.html 保持一致）
 const LANG_ALIASES: Record<string, string> = {
@@ -61,19 +61,19 @@ export function useHighlight(previewRef: Ref<HTMLElement | undefined>, toast: To
     // 保存原始文本，防止高亮失败后内容丢失
     const originalHTML = code.innerHTML
     try {
-      const result = (window as any).hljs.highlight(text, { language: mapped, ignoreIllegals: true })
-      if (result.value && result.value.includes('<span')) {
+      const result = window.hljs?.highlight(text, { language: mapped, ignoreIllegals: true })
+      if (result?.value && result.value.includes('<span')) {
         code.innerHTML = result.value
         return
       }
-    } catch (_) { /* ignore */ }
+    } catch { /* ignore */ }
 
     // Fallback: 恢复原始内容后用 highlightElement
     code.innerHTML = originalHTML
     try {
       code.className = (code.className + ' language-' + mapped).trim()
-      ;(window as any).hljs.highlightElement(code)
-    } catch (_) { /* ignore */ }
+      window.hljs?.highlightElement(code)
+    } catch { /* ignore */ }
   }
 
   function addCodeCopyButtons() {

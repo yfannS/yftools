@@ -179,7 +179,6 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useEditorStore } from '@/stores/editor'
 import { usePreviewStore } from '@/stores/preview'
 import { useAppStore } from '@/stores/app'
-import { useAuthStore } from '@/stores/auth'
 import { useMarkdownRender } from '@/composables/useMarkdownRender'
 import { useScrollSync } from '@/composables/useScrollSync'
 import { usePanelResize } from '@/composables/usePanelResize'
@@ -195,7 +194,6 @@ import OutlinePanel from '@/components/md2html/OutlinePanel.vue'
 const editorStore = useEditorStore()
 const previewStore = usePreviewStore()
 const appStore = useAppStore()
-const authStore = useAuthStore()
 
 // DOM refs
 const editorRef = ref<HTMLTextAreaElement>()
