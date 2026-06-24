@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      CSP 说明：
+      - script-src 含 'unsafe-inline' 是为了兼容 Vite dev HMR，生产构建可移除
+      - connect-src 需包含后端 API 地址
+    -->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self';
+                   script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+                   style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+                   font-src 'self' https://cdn.jsdelivr.net;
+                   img-src 'self' data:;
+                   connect-src 'self' http://localhost:8000 https://cdn.jsdelivr.net;
+                   worker-src 'self' blob:;
+                   object-src 'none';
+                   base-uri 'none';" />
     <title>Markdown → HTML 工具箱</title>
     <!-- 外部依赖库 -->
     <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
@@ -39,9 +54,6 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
-    <script>
-      // 初始化 Mermaid（不在加载时渲染，由应用控制）
-      mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'default' });
-    </script>
+    <script src="/mermaid-init.js"></script>
   </body>
 </html>

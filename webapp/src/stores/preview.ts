@@ -1,5 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import DOMPurify from 'dompurify'
+
+// DOMPurify 配置：允许渲染后的 Markdown HTML，禁止所有危险属性/标签
+const SANITIZE_OPTS: Parameters<typeof DOMPurify.sanitize>[1] = {
+  ADD_TAGS: ['mermaid'],
+  ADD_ATTR: ['class', 'id', 'data-mermaid-source'],
+  FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'select', 'button'],
+  FORBID_ATTR: ['on*', 'formaction', 'formmethod', 'action', 'xmlns'],
+  ALLOW_DATA_ATTR: false,
+  SANITIZE_DOM: true,
+}
 
 export interface OutlineItem {
   id: string
@@ -18,9 +29,9 @@ export const usePreviewStore = defineStore('preview', () => {
 
   function setRenderedContent(raw: string, rendered: string, timeMs: number) {
     rawHtml.value = raw
-    renderedHtml.value = rendered
+    renderedHtml.value = DOMPurify.sanitize(rendered, SANITIZE_OPTS)
     renderTimeMs.value = timeMs
-    htmlSize.value = formatBytes(new Blob([rendered]).size)
+    htmlSize.value = formatBytes(new Blob([renderedHtml.value]).size)
   }
 
   function setOutline(items: OutlineItem[]) {
