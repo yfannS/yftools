@@ -13,20 +13,24 @@
       </div>
       <div class="toolbar-center">
         <div class="btn-group">
-          <button class="tool-btn primary" @click="formatJson(2)" :disabled="!inputJson.trim()" title="缩进 2 空格">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+          <button class="tool-btn primary" @click="formatJson(2)" :disabled="!inputJson.trim() || loading" title="缩进 2 空格">
+            <svg v-if="loadingAction !== 'format2'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            <svg v-else class="spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
             格式化
           </button>
-          <button class="tool-btn primary" @click="formatJson(4)" :disabled="!inputJson.trim()" title="缩进 4 空格">
+          <button class="tool-btn primary" @click="formatJson(4)" :disabled="!inputJson.trim() || loading" title="缩进 4 空格">
+            <svg v-if="loadingAction === 'format4'" class="spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
             缩进 4
           </button>
-          <button class="tool-btn" @click="minifyJson" :disabled="!inputJson.trim()" title="压缩为单行">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          <button class="tool-btn" @click="minifyJson" :disabled="!inputJson.trim() || loading" title="压缩为单行">
+            <svg v-if="loadingAction !== 'minify'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            <svg v-else class="spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
             压缩
           </button>
           <div class="btn-separator"></div>
-          <button class="tool-btn" @click="validateJson" :disabled="!inputJson.trim()" title="校验 JSON 语法">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <button class="tool-btn" @click="validateJson" :disabled="!inputJson.trim() || loading" title="校验 JSON 语法">
+            <svg v-if="loadingAction !== 'validate'" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <svg v-else class="spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
             校验
           </button>
         </div>
@@ -125,6 +129,11 @@ const outputJson = ref('')
 const validateResult = ref<JsonValidateData | null>(null)
 const router = useRouter()
 
+/** 当前正在执行的操作标识，用于区分各按钮的 loading 图标 */
+const loadingAction = ref<'format2' | 'format4' | 'minify' | 'validate' | null>(null)
+/** 任意操作运行中时为 true，用于禁用所有工具按钮防重复提交 */
+const loading = computed(() => loadingAction.value !== null)
+
 const outputInfo = computed(() => {
   if (!outputJson.value) return ''
   const size = new Blob([outputJson.value]).size
@@ -133,26 +142,37 @@ const outputInfo = computed(() => {
 })
 
 async function formatJson(indent: number) {
+  const action = indent === 4 ? 'format4' : 'format2'
+  if (loading.value) return
+  loadingAction.value = action
   try {
     const result = await jsonFormatterApi.format(inputJson.value, indent, false)
     outputJson.value = result.output
     validateResult.value = null
   } catch (e) {
     showToast(getApiErrorMessage(e, '格式化失败'), 'err')
+  } finally {
+    loadingAction.value = null
   }
 }
 
 async function minifyJson() {
+  if (loading.value) return
+  loadingAction.value = 'minify'
   try {
     const result = await jsonFormatterApi.format(inputJson.value, 2, true)
     outputJson.value = result.output
     validateResult.value = null
   } catch (e) {
     showToast(getApiErrorMessage(e, '压缩失败'), 'err')
+  } finally {
+    loadingAction.value = null
   }
 }
 
 async function validateJson() {
+  if (loading.value) return
+  loadingAction.value = 'validate'
   try {
     const result = await jsonFormatterApi.validate(inputJson.value)
     validateResult.value = result
@@ -163,6 +183,8 @@ async function validateJson() {
     }
   } catch (e) {
     showToast(getApiErrorMessage(e, '校验失败'), 'err')
+  } finally {
+    loadingAction.value = null
   }
 }
 
@@ -544,4 +566,13 @@ async function copyOutput() {
 .slide-up-enter-active { transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
 .slide-up-leave-active { transition: all 0.2s ease; }
 .slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateX(-50%) translateY(16px); }
+
+/* loading spin 动画 */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 0.7s linear infinite;
+  opacity: 0.8;
+}
 </style>

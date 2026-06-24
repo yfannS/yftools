@@ -1,6 +1,9 @@
 const BASE_URL = import.meta.env.VITE_API_BASE || ''
 const AUTH_EXPIRED_EVENT = 'app:auth-expired'
 
+/** 默认请求超时（毫秒） */
+const DEFAULT_TIMEOUT_MS = 15_000
+
 interface RequestOptions {
   method: string
   path: string
@@ -8,6 +11,10 @@ interface RequestOptions {
   auth?: boolean
   /** 不自动解包 data 字段，返回完整响应 */
   raw?: boolean
+  /** 自定义超时毫秒数，0 表示不超时 */
+  timeout?: number
+  /** 外部取消信号，路由切换时可用于取消在途请求 */
+  signal?: AbortSignal
 }
 
 export interface ApiErrorBody {
@@ -39,10 +46,13 @@ export class ApiError extends Error {
 
 /**
  * 统一请求函数
- * 
+ *
  * 后端响应格式：{ success: boolean, data?: T, message?: string }
  * 默认自动解包 data 字段，直接返回 T 类型数据。
  * 设置 raw: true 时返回完整响应体。
+ *
+ * 超时：默认 15s，可通过 opts.timeout 覆盖（0 = 不超时）。
+ * 取消：传入 opts.signal 可在路由切换时 abort 请求。
  */
 export async function request<T>(opts: RequestOptions): Promise<T> {
   const headers: Record<string, string> = {
@@ -54,10 +64,27 @@ export async function request<T>(opts: RequestOptions): Promise<T> {
     headers['Authorization'] = `Bearer ${token}`
   }
 
+  // 组合超时 signal 与外部 signal
+  const timeoutMs = opts.timeout === undefined ? DEFAULT_TIMEOUT_MS : opts.timeout
+  let combinedSignal: AbortSignal | undefined
+
+  if (timeoutMs > 0 && opts.signal) {
+    // 两路 signal 取最先触发的
+    const timeoutSignal = AbortSignal.timeout(timeoutMs)
+    combinedSignal = AbortSignal.any
+      ? AbortSignal.any([timeoutSignal, opts.signal])
+      : opts.signal // 降级：不支持 any 时优先外部 signal
+  } else if (timeoutMs > 0) {
+    combinedSignal = AbortSignal.timeout(timeoutMs)
+  } else {
+    combinedSignal = opts.signal
+  }
+
   const res = await fetch(`${BASE_URL}${opts.path}`, {
     method: opts.method,
     headers,
     body: opts.body ? JSON.stringify(opts.body) : undefined,
+    signal: combinedSignal,
   })
 
   if (!res.ok) {

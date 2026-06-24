@@ -155,6 +155,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useHistoryStore, type HistoryListItem } from '@/stores/history'
 import { useEditorStore } from '@/stores/editor'
+import { showConfirm } from '@/composables/useConfirm'
 
 const authStore = useAuthStore()
 const historyStore = useHistoryStore()
@@ -215,7 +216,8 @@ async function loadHistoryItem(item: HistoryListItem, mode: 'replace' | 'new') {
 }
 
 async function onDelete(id: number) {
-  if (!confirm('确定删除这条记录？')) return
+  const ok = await showConfirm({ message: '确定删除这条记录？', danger: true, confirmText: '删除' })
+  if (!ok) return
   await historyStore.deleteItem(id)
 }
 

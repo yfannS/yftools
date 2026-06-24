@@ -187,6 +187,7 @@ import { useFindReplace } from '@/composables/useFindReplace'
 import { useToast } from '@/composables/useToast'
 import { useExportHtml } from '@/composables/useExportHtml'
 import { useAutoSave } from '@/composables/useAutoSave'
+import { showConfirm } from '@/composables/useConfirm'
 import ToolbarBar from '@/components/md2html/ToolbarBar.vue'
 import TabBar from '@/components/md2html/TabBar.vue'
 import OutlinePanel from '@/components/md2html/OutlinePanel.vue'
@@ -338,9 +339,10 @@ $$
 | 流程图 | 支持 |
 `
 
-function loadExample() {
+async function loadExample() {
   if (editorStore.content.trim()) {
-    if (!confirm('加载示例将覆盖当前内容，继续吗？')) return
+    const ok = await showConfirm({ message: '加载示例将覆盖当前内容，继续吗？', confirmText: '继续' })
+    if (!ok) return
   }
   editorStore.setContent(EXAMPLE_MD)
   markdownRender.renderMarkdown()

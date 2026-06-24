@@ -44,6 +44,7 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
 import { useEditorStore } from '@/stores/editor'
+import { showConfirm } from '@/composables/useConfirm'
 
 const editorStore = useEditorStore()
 
@@ -78,9 +79,9 @@ function cancelRename() {
   renamingTabId.value = null
 }
 
-function onContextMenu(_e: MouseEvent, tabId: string) {
-  // 简单的右键菜单：关闭其他
-  if (confirm('关闭其他标签？')) {
+async function onContextMenu(_e: MouseEvent, tabId: string) {
+  const ok = await showConfirm({ message: '关闭其他标签？', confirmText: '关闭' })
+  if (ok) {
     editorStore.closeOtherTabs(tabId)
   }
 }
